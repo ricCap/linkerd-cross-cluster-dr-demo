@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mesh tier — cross-cluster DR</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='4' cy='8' r='2.4' fill='%230f766e'/%3E%3Ccircle cx='11' cy='4' r='2.4' fill='%230f766e' opacity='.55'/%3E%3Ccircle cx='11' cy='12' r='2.4' fill='%230f766e' opacity='.55'/%3E%3C/svg%3E">
+<style>
+  /* One shared set of color tokens, so every view of the rig reads the same. */
+  :root{
+    --surface:#ffffff; --ink:#151a1c; --muted:#59646a; --rule:#d0d9dc; --chip:#e9eef0;
+    --mesh:#0f766e; --fault:#a8391a; --observer:#8a6516;
+    --page:#f4f6f7;
+    /* Two greys, because WCAG asks two different things of them. --dead labels
+       a dead cluster and is TEXT, so it needs 4.5:1 (it was #98a3a8 at 2.58,
+       a straight failure). --idle strokes the wiring for a route carrying
+       nothing: a meaningful graphical object, so 3:1, and deliberately no more
+       than that so quiet links stay quiet. */
+    --dead:#6d767b;   /* 4.64:1 on white */
+    --idle:#8b969b;   /* 3.03:1 on white */
+    /* One hue per exposure mode, chosen for separation from each other AND from
+       the two colours that already mean something: --fault (errors) and --dead
+       (idle). Roughly 175° / 265° / 40° apart, so no two are adjacent, and none
+       is red. --ink is deliberately not used here -- it is the body text colour,
+       it flips from near-black to near-white between themes, and an arc drawn in
+       it reads as a rule rather than as traffic. */
+    --lane-federated:#0f766e;
+    --lane-flat:#4a35c4;
+    --lane-gateway:#96600a;   /* 5.28:1 on white */
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --surface:#191e20; --ink:#e5eaeb; --muted:#94a1a6; --rule:#2a3234; --chip:#212a2c;
+      --mesh:#4cc2b1; --fault:#f07a58; --observer:#dcb45c;
+      --page:#111516;
+      --dead:#7b898e;   /* 4.66:1 on the dark surface */
+      --idle:#6b787d;   /* 3.69:1 */
+      --lane-federated:#4cc2b1;
+      --lane-flat:#9d8cff;
+      --lane-gateway:#e0b45f;
+    }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--page); color:var(--ink);
+    font:13px/1.5 var(--mono);
+  }
+  header{
+    display:flex; flex-wrap:wrap; gap:10px 18px; align-items:baseline;
+    padding:14px 20px; border-bottom:1px solid var(--rule); background:var(--surface);
+  }
+  h1{font-size:15px; font-weight:700; margin:0; letter-spacing:-0.01em}
+  h1 span{color:var(--muted); font-weight:400}
+  .meta{display:flex; gap:14px; flex-wrap:wrap; margin-left:auto; color:var(--muted); font-size:11px}
+  .meta b{color:var(--ink); font-weight:600}
+
+  .pill{
+    display:inline-block; padding:1px 8px; border-radius:10px; font-size:11px;
+    border:1px solid var(--rule); background:var(--chip); color:var(--muted);
+  }
+  .pill.live{border-color:var(--mesh); color:var(--mesh)}
+  .pill.hot{border-color:var(--fault); color:var(--fault)}
+
+  main{display:grid; grid-template-columns:minmax(0,1.55fr) minmax(330px,1fr); gap:0; align-items:start}
+  /* minmax(0,1fr), not 1fr.
+     A bare `1fr` is `minmax(auto,1fr)`, and that `auto` floor is the column's
+     MIN-CONTENT width. The route table sets white-space:nowrap on its cells, so
+     its min-content is the width of the widest unbroken row -- which pushed the
+     whole column, and the diagram inside it, wider than the viewport the moment
+     "Traffic as text" was opened. The overflow-x on the table wrapper could not
+     help: the blow-out happened one level up, in the grid track. */
+  @media (max-width:1000px){ main{grid-template-columns:minmax(0,1fr)} }
+
+  /* Grid and flex children default to min-width:auto, which is the same trap
+     one level down. */
+  .canvas, .rail{min-width:0}
+
+  .canvas{padding:16px 20px}
+
+  /* The diagram's text equivalent. It is not a fallback bolted on for
+     compliance: the arc tooltips are <title> elements, which need a hover, so
+     on a touch screen this is the only way to read a route at all. */
+  #astext{margin-top:12px; border:1px solid var(--rule); border-radius:8px; background:var(--surface)}
+  #astext summary{
+    padding:8px 12px; font-size:11px; font-weight:600; letter-spacing:.04em;
+    text-transform:uppercase; color:var(--muted); cursor:pointer;
+  }
+  #astext[open] summary{border-bottom:1px solid var(--rule)}
+  .tablewrap{overflow-x:auto; max-width:100%}
+  #routetable{border-collapse:collapse; width:100%; font-size:12px}
+  #routetable th, #routetable td{padding:6px 12px; text-align:left; white-space:nowrap}
+  #routetable th{font-weight:600; color:var(--muted); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em}
+  #routetable tbody tr{border-top:1px solid var(--rule)}
+  #routetable td.num{text-align:right; font-variant-numeric:tabular-nums}
+  #routetable td.bad{color:var(--fault); font-weight:600}
+  svg{width:100%; height:auto; display:block}
+
+  .rail{padding:16px 20px 16px 0; display:flex; flex-direction:column; gap:14px}
+  @media (max-width:1000px){ .rail{padding:0 20px 16px} }
+
+  .card{background:var(--surface); border:1px solid var(--rule); border-radius:8px; overflow:hidden}
+  .card > h2{
+    margin:0; padding:8px 12px; font-size:11px; font-weight:600; letter-spacing:.04em;
+    text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--rule);
+    display:flex; justify-content:space-between; gap:8px; align-items:baseline;
+  }
+  .card > h2 em{font-style:normal; text-transform:none; letter-spacing:0; font-weight:400; font-size:10.5px}
+  #sources .card > h2{font-size:13px; text-transform:none; letter-spacing:0; color:var(--ink); font-weight:700}
+  #sources .card > h2 em{color:var(--observer)}
+  #sources{display:flex; flex-direction:column; gap:14px}
+
+  /* --- the green-dashboard strip -------------------------------------------
+     Deliberately styled like a status page, because the argument of the whole
+     exercise is that this stays green while the lanes underneath do not. */
+  .k8s{display:flex; gap:8px; padding:10px 12px}
+  .k8s > div{
+    flex:1; padding:7px 9px; border-radius:5px; background:var(--chip);
+    border-left:3px solid var(--mesh);
+  }
+  .k8s > div.bad{border-left-color:var(--fault)}
+  .k8s .n{font-weight:700; font-size:12px}
+  .k8s .s{color:var(--muted); font-size:10.5px}
+
+  .lane{padding:10px 12px; border-top:1px solid var(--rule)}
+  .lane:first-of-type{border-top:none}
+  .lane.absent{opacity:.55}
+  .lane-head{display:flex; align-items:baseline; gap:8px}
+  .lane-head .name{font-weight:700}
+  .lane-head .svc{color:var(--muted); font-size:11px; margin-left:auto}
+  .lane-nums{display:flex; flex-wrap:wrap; gap:6px 12px; margin:6px 0 5px; font-size:11.5px; align-items:baseline}
+  .lane-nums .rps{font-size:15px; font-weight:700; white-space:nowrap}
+  .lane-nums > span{white-space:nowrap}
+  .lane-nums .u{color:var(--muted); font-weight:400; font-size:10.5px}
+  .tag{font-size:10.5px; padding:0 6px; border-radius:9px; background:var(--chip); color:var(--muted)}
+  .tag.bad{background:var(--fault); color:var(--surface); font-weight:600}
+
+  .bar{display:flex; height:7px; border-radius:4px; overflow:hidden; background:var(--chip)}
+  .bar i{display:block; height:100%}
+  .bar-key{display:flex; gap:10px; margin-top:4px; font-size:10.5px; color:var(--muted); flex-wrap:wrap}
+  .bar-key b{font-weight:600; color:var(--ink)}
+  .sw{display:inline-block; width:7px; height:7px; border-radius:2px; margin-right:4px; vertical-align:middle}
+
+  .note{padding:8px 12px; font-size:11px; color:var(--muted); border-top:1px solid var(--rule)}
+  .note.warn{color:var(--fault)}
+
+  footer{
+    border-top:1px solid var(--rule); background:var(--surface);
+    padding:6px 20px 8px; display:flex; gap:14px; align-items:center; flex-wrap:wrap;
+  }
+  /* The control that changes what you are looking at was at the bottom of a
+     1600px page. Pin it. */
+  @media (max-width:1000px){
+    footer{
+      position:sticky; bottom:0; z-index:5; padding:4px 12px 6px;
+      box-shadow:0 -2px 10px rgb(0 0 0 / 0.07);
+    }
+    footer #src{display:none}
+  }
+
+  @media (max-width:640px){
+    header{padding:10px 14px; gap:8px 12px}
+    h1{font-size:14px}
+    h1 span{display:none}          /* the subtitle is the page's own title bar */
+    .meta{margin-left:0; width:100%; gap:10px}
+    #pick{max-width:100%; flex:1 1 100%}
+    .canvas{padding:12px 14px}
+    .rail{padding:0 14px 12px}
+    /* Three cards in a 375px row gave each ~100px and wrapped "not recorded"
+       onto two lines inside a stretched box. */
+    .k8s{flex-direction:column; gap:6px}
+    .k8s > div{display:flex; gap:10px; align-items:baseline}
+    .k8s .s{margin-left:auto}
+    .lane-nums{gap:5px 10px}
+    .lane-nums .rps{font-size:14px}
+  }
+  /* 44px of hit area for a 6px track: the control was 16px tall, under the 24px
+     WCAG 2.5.8 minimum and hopeless with a thumb. */
+  footer input[type=range]{
+    flex:1; min-width:180px; accent-color:var(--mesh);
+    height:44px; margin:0; background:transparent;
+  }
+  footer input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; appearance:none;
+    width:22px; height:22px; border-radius:50%; background:var(--mesh); border:2px solid var(--surface);
+    margin-top:-8px;}
+  footer input[type=range]::-webkit-slider-runnable-track{height:6px; border-radius:3px; background:var(--chip)}
+  footer input[type=range]::-moz-range-thumb{width:22px; height:22px; border:2px solid var(--surface);
+    border-radius:50%; background:var(--mesh)}
+  footer input[type=range]::-moz-range-track{height:6px; border-radius:3px; background:var(--chip)}
+
+  .sr-only{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+  }
+
+  /* There were no focus styles at all. */
+  :focus-visible{outline:2px solid var(--lane-flat); outline-offset:2px; border-radius:3px}
+
+  .skip{
+    position:absolute; left:8px; top:-44px; z-index:10;
+    padding:7px 12px; border-radius:6px; background:var(--surface);
+    border:1px solid var(--rule); color:var(--ink); text-decoration:none;
+  }
+  .skip:focus{top:8px}
+  button{
+    font:inherit; font-size:12px; padding:8px 14px; min-height:36px; border-radius:5px; cursor:pointer;
+    border:1px solid var(--rule); background:var(--chip); color:var(--ink);
+  }
+  button[aria-pressed=true]{border-color:var(--mesh); color:var(--mesh)}
+  select{
+    font:inherit; font-size:12px; padding:7px 8px; min-height:36px; border-radius:5px;
+    border:1px solid var(--rule); background:var(--chip); color:var(--ink); max-width:min(46vw,340px);
+  }
+
+  /* --- svg classes, mirroring the diagram stylesheet --------------------- */
+  .box{fill:var(--surface); stroke:var(--rule); stroke-width:1.5}
+  .box.unreachable{stroke:var(--fault); stroke-dasharray:5 4}
+  .box.silent{stroke:var(--fault); stroke-dasharray:5 4}
+  .box.down{stroke:var(--dead); stroke-dasharray:4 4}
+  .box.unmeshed{stroke:var(--fault); stroke-width:2.5}
+  .zone{fill:var(--chip)}
+  .rgn{fill:none; stroke:var(--rule); stroke-width:1.5; stroke-dasharray:5 5}
+  .t{fill:var(--ink); font-family:var(--mono)}
+  .m{fill:var(--muted); font-family:var(--mono)}
+  /* .pod carries no fill on purpose: it is set inline per workload, and a class
+     rule beats a presentation attribute, which flattened every column to one
+     colour. The class stays as a selector hook. */
+  text.gone{fill:var(--dead)}
+
+  .edge{fill:none; stroke-linecap:round}
+  .edge.idle{stroke:var(--idle); stroke-width:1.2; stroke-dasharray:2 6}
+  .edge.err{stroke:var(--fault)}
+  .flow{stroke-linecap:round; stroke-dasharray:0.01 15; animation:flow 1s linear infinite}
+  @keyframes flow{ to{ stroke-dashoffset:-15 } }
+  @media (prefers-reduced-motion:reduce){ .flow{animation:none; stroke-dasharray:none; opacity:.8} }
+</style>
+</head>
+<body>
+
+<a class="skip" href="#readout">Skip to the measurements</a>
+<header>
+  <h1>Mesh tier <span>— cross-cluster DR</span></h1>
+  <select id="pick" hidden aria-label="Recorded run"></select>
+  <span class="pill" id="phase">—</span>
+  <span class="pill" id="feedkind">—</span>
+  <div class="meta">
+    <span>observer <b id="observer">—</b></span>
+    <span>flavor <b id="flavor">—</b></span>
+    <span>window <b id="window">—</b></span>
+    <span id="clock">—</span>
+  </div>
+</header>
+
+<main>
+  <div class="canvas">
+    <svg id="topo" role="img" aria-label="Cross-cluster traffic topology"></svg>
+    <details id="astext">
+      <summary>Traffic as text</summary>
+      <div class="tablewrap"><table id="routetable"></table></div>
+    </details>
+  </div>
+
+  <div class="rail" id="readout" tabindex="-1">
+    <section class="card">
+      <h2>What Kubernetes says <em>cluster tier</em></h2>
+      <div class="k8s" id="k8s"></div>
+      <div class="note" id="k8snote"></div>
+    </section>
+
+    <div id="sources"></div>
+    <section class="card">
+      <h2>Reading these numbers</h2>
+      <div id="lanenote"></div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <button id="follow" aria-pressed="true">following</button>
+  <label class="sr-only" for="scrub">Sample position in the recording</label>
+  <input type="range" id="scrub" min="0" max="0" value="0">
+  <span class="pill" id="pos">0 / 0</span>
+  <span class="meta" id="src"></span>
+  <span class="sr-only" id="live" role="status" aria-live="polite"></span>
+</footer>
+
+<script>
+"use strict";
+
+// --- feed ------------------------------------------------------------------
+//
+// One JSON object per line, written by viz/export.sh. The page never talks to a
+// cluster: everything it knows arrives through this file, which is what lets
+// the same page serve a live game day and a recorded replay.
+
+const params   = new URLSearchParams(location.search);
+const MANIFEST = params.get("manifest") || "feeds/index.json";
+const POLL_MS  = Number(params.get("poll") || 2000);
+
+// Mutable: the run selector repoints it. Absent a manifest this is the live
+// feed the local sampler writes, which is the console case.
+let FEED = params.get("feed") || "data/live.ndjson";
+
+let samples = [];
+let lastLength = -1;
+let cursor  = 0;
+let follow  = true;
+let built   = null;   // topology signature the SVG scaffold was built for
+
+const $ = (id) => document.getElementById(id);
+
+function parseFeed(text){
+  const out = [];
+  for (const line of text.split("\n")){
+    const s = line.trim();
+    if (!s) continue;
+    try { out.push(JSON.parse(s)); } catch (e) { /* partial trailing write */ }
+  }
+  return out;
+}
+
+// An inline feed makes the page a single self-contained file for the write-up.
+const inline = document.getElementById("inline-feed");
+
+async function load(){
+  let text;
+  if (inline){
+    text = inline.textContent;
+    $("src").textContent = "inline feed";
+  } else {
+    const res = await fetch(FEED, {cache:"no-store"});
+    if (!res.ok) throw new Error(res.status + " " + FEED);
+    text = await res.text();
+    $("src").textContent = FEED;
+  }
+  if (text.length === lastLength) return;   // nothing appended since last poll
+  lastLength = text.length;
+  samples = parseFeed(text);
+  if (!samples.length) return;
+  $("scrub").max = samples.length - 1;
+  if (follow) cursor = samples.length - 1;
+  $("scrub").value = cursor;
+  draw(samples[cursor]);
+}
+
+// --- geometry --------------------------------------------------------------
+
+const MODES = ["federated", "flat", "gateway"];
+
+const LANE_COLOR = {
+  federated: "var(--lane-federated)",
+  flat:      "var(--lane-flat)",
+  gateway:   "var(--lane-gateway)",
+};
+
+// Destination buckets within a lane are shaded, not re-hued.
+//
+// They were previously coloured from the lane palette, which put two different
+// encodings on one channel: hue meant "exposure mode" on the arcs and "which
+// cluster" in the bars. Within a bar every segment is the same lane, so the
+// only thing left to distinguish is destination -- a lightness ramp does that
+// without borrowing a hue that already means something else.
+const DEST_OPACITY = [1, 0.66, 0.42, 0.3];
+
+// Two layouts, not one layout scaled.
+//
+// A phone gets ~340 CSS px for the diagram. The wide layout is 960 viewBox
+// units across, so it renders at 0.35 scale and its 9.5-unit labels land at
+// 3.3px -- unreadable, not merely small. Making the type big enough inside a
+// 960-unit box would need a ~1100px container, which a phone does not have.
+//
+// So below the breakpoint the clusters stack vertically in a ~380-unit box.
+// Same information, ~0.9 scale, type that renders at the size it says.
+const WIDE = {
+  narrow:false, W:960, CW:274, CH:214, GAP:30, TOP:72, PAD:20,
+  fs:{name:15, cidr:10.5, zone:10, col:9.5, note:11, gw:9.5},
+};
+const NARROW = {
+  narrow:true, W:380, CW:286, CH:146, GAP:16, TOP:34, PAD:12,
+  fs:{name:15, cidr:11, zone:11, col:11.5, note:11, gw:11},
+};
+
+// Which one this container can carry. Measured, not guessed from the viewport,
+// so the diagram is right inside any column it is put in.
+function layoutFor(){
+  const w = $("topo").getBoundingClientRect().width;
+  return w > 0 && w < 620 ? NARROW : WIDE;
+}
+let L = WIDE;
+
+// Box rectangles, laid out once per build.
+//
+// Heights vary: only the gateway host needs room for the gateway chip, and a
+// uniform height tall enough for it leaves the other clusters half empty. In
+// the stacked layout a new region also gets extra clearance, or its dashed
+// envelope runs through the box above it.
+function layoutBoxes(cl, gateways){
+  const boxes = [];
+  if (!L.narrow){
+    cl.forEach((c, i) => boxes.push({x:L.PAD + i * (L.CW + L.GAP), y:L.TOP, h:L.CH}));
+    return boxes;
+  }
+  let y = L.TOP;
+  cl.forEach((c, i) => {
+    if (i > 0) y += L.GAP + (cl[i].region !== cl[i-1].region ? 18 : 0);
+    const h = L.CH + (gateways.includes(c.name) ? 32 : 0);
+    boxes.push({x:L.PAD, y, h});
+    y += h;
+  });
+  return boxes;
+}
+
+const edgeId = (r) => `e-${r.src}-${r.mode}-${r.dst}`;
+
+// What each status means, and whether it is an outage.
+//
+// `unmeshed` is the one that matters and the one a status page normally gets
+// wrong. The cluster is up, its pods are Running and Ready, and they have no
+// linkerd-proxy -- so there are no proxy metrics, and silence from a healthy
+// cluster looks exactly like an outage unless something says otherwise.
+const STATUS = {
+  up:          {dead:false, label:"",             card:null},
+  unknown:     {dead:false, label:"not recorded", card:"not recorded"},
+  unmeshed:    {dead:false, label:"unmeshed",     card:"Running and Ready, with no linkerd-proxy — so no metrics, no mTLS, and no policy enforcement. The cluster tier cannot see this."},
+  silent:      {dead:true,  label:"silent",       card:"proxy present but not answering"},
+  unreachable: {dead:true,  label:"unreachable",  card:"nodes running, API unreachable — partitioned"},
+  down:        {dead:true,  label:"down",         card:"no nodes running — nothing to ask"},
+  // Healthy, and simply not a load source. LOAD_CLUSTERS defaults to west
+  // alone, so the other clusters have no generator to read metrics from -- that
+  // is the design, and rendering it as a fault told the opposite of the truth.
+  "no-generator": {dead:false, label:"no load source", card:"API healthy; this cluster generates no load, so there are no client-side metrics to show. Not a fault."},
+};
+const statusInfo = (st) => STATUS[st] || STATUS.unknown;
+
+// Every (source, mode, destination) that has carried traffic anywhere in the
+// feed. Discovered rather than enumerated: the full cross product is mostly
+// links that do not exist, and drawing them would imply routes the rig has not
+// got.
+let routeCache = {n:-1, routes:[]};
+function discoverRoutes(all){
+  if (routeCache.n === all.length) return routeCache.routes;
+  const seen = new Map();
+  for (const s of all){
+    for (const src in (s.sources || {})){
+      const modes = s.sources[src].modes || {};
+      for (const m in modes){
+        const dist = modes[m].dist || {};
+        for (const dst in dist){
+          if (!dist[dst]) continue;
+          const r = {src, mode:m, dst};
+          seen.set(edgeId(r), r);
+        }
+      }
+    }
+  }
+  routeCache = {n:all.length, routes:[...seen.values()]};
+  return routeCache.routes;
+}
+
+// Per (source, mode): did this lane EVER carry traffic anywhere in the feed?
+//
+// Without this, a mode the load generator never drove reads as a catastrophic
+// silent failure. That is not hypothetical -- the runs recorded before
+// per-cluster targets landed (clusters/lib.sh: modes_for) drove one service
+// while the runner measured another, so a lane sits at zero because it was
+// never exercised. FM1 kills nothing at all, and its gateway lane is flat zero;
+// calling that "a request that never completes" would publish a finding that is
+// the opposite of true.
+//
+// "Never carried anything, anywhere in this recording" is the distinguishing
+// fact, and it is in the data.
+let exercisedCache = {n:-1, set:null};
+function exercised(all){
+  if (exercisedCache.n === all.length) return exercisedCache.set;
+  const set = new Set();
+  for (const s of all){
+    for (const src in (s.sources || {})){
+      const modes = s.sources[src].modes || {};
+      for (const m in modes) if (modes[m].reqs > 0) set.add(src + "|" + m);
+    }
+  }
+  exercisedCache = {n:all.length, set};
+  return set;
+}
+
+const signature = (sample, routes) => JSON.stringify([
+  layoutFor().narrow,
+  (sample.topology || []).map(c => c.name),
+  sample.zones || [],
+  (sample.workloads || []).map(w => w.name + ":" + w.clusters.join(",")),
+  sample.gateways || [],
+  routes.map(edgeId).sort()
+]);
+
+// Scaffold: everything that does not change between samples. Rebuilt only when
+// the topology itself changes, so the flow animation is never interrupted.
+function build(sample, routes){
+  const svg = $("topo");
+  L = layoutFor();
+  const cl = sample.topology || [];
+  const zones = sample.zones || [];
+  const wl = sample.workloads || [];
+  const gws = sample.gateways || [];
+  svg.innerHTML = "";
+  const boxes = layoutBoxes(cl, gws);
+
+  const ns = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, text) => {
+    const n = document.createElementNS(ns, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (text != null) n.textContent = text;
+    svg.appendChild(n);
+    return n;
+  };
+
+  // Region envelopes: one dashed box per contiguous run of same-region clusters,
+  // growing along whichever axis the clusters stack on.
+  let i = 0;
+  while (i < cl.length){
+    let j = i;
+    while (j + 1 < cl.length && cl[j+1].region === cl[i].region) j++;
+    const a = boxes[i], b = boxes[j];
+    const x = a.x - 8, y = a.y - 14;
+    const w = (b.x + L.CW + 8) - x, h = (b.y + b.h + 10) - y;
+    el("rect", {class:"rgn", x, y, width:w, height:h, rx:8});
+    // The full sentence does not fit a phone; the region name always does.
+    el("text", {class:"m", x:x+8, y:y-6, "font-size":L.fs.note}, cl[i].region +
+       (j > i && !L.narrow
+         ? "  —  two clusters, so a region failure is an honest two-cluster loss"
+         : j > i ? "  — two clusters" : ""));
+    i = j + 1;
+  }
+
+  cl.forEach((c, idx) => {
+    const {x, y:by, h:bh} = boxes[idx];
+    el("rect", {class:"box", id:`box-${c.name}`, x, y:by, width:L.CW, height:bh, rx:7});
+    el("text", {class:"t", id:`name-${c.name}`, x:x+14, y:by+22, "font-size":L.fs.name, "font-weight":700}, c.name);
+    el("text", {class:"m", x:x+14, y:by+37, "font-size":L.fs.cidr}, c.pod_cidr || "");
+    el("text", {class:"m", id:`st-${c.name}`, x:x+L.CW-14, y:by+22, "font-size":L.fs.cidr, "text-anchor":"end"}, "");
+
+    // A column per workload that actually runs here, a row per zone.
+    //
+    // The previous version drew one dot per zone and left it at that, which
+    // silently depicted the federated workload's replicas alone: west and
+    // central run six pods, east runs nine, and the picture showed three. It
+    // also hid the reason the gateway lane always points at east -- analytics
+    // is deployed there and nowhere else.
+    const here = wl.filter(w => w.clusters.includes(c.name));
+    const gutter = L.narrow ? 44 : 62;
+    const step = (L.CW - gutter - 14) / Math.max(here.length, 1);
+    const colX = (i) => x + gutter + i * step + step/2;
+
+    here.forEach((w, wi) => {
+      el("text", {class:"m", x:colX(wi), y:by+52, "font-size":L.fs.col, "text-anchor":"middle",
+                  fill:LANE_COLOR[w.mode]}, w.name);
+    });
+
+    const rowH = L.narrow ? 24 : 30;
+    zones.forEach((z, zi) => {
+      const y = by + 60 + zi * rowH;
+      el("rect", {class:"zone", x:x+10, y, width:L.CW-20, height:rowH-6, rx:4});
+      el("text", {class:"m", x:x+18, y:y+rowH-12, "font-size":L.fs.zone}, z);
+      here.forEach((w, wi) => {
+        el("circle", {class:"pod", id:`pod-${c.name}-${w.name}-${z}`,
+                      cx:colX(wi), cy:y+(rowH-6)/2, r:L.narrow ? 5 : 4.5,
+                      style:`fill:${LANE_COLOR[w.mode]}`});
+      });
+    });
+
+    // The multicluster gateway is a real hop, not a label: a gateway mirror
+    // resolves to this cluster's NODE addresses and the gateway forwards from
+    // there. Arcs land on it rather than on the analytics pods directly.
+    if ((sample.gateways || []).includes(c.name)){
+      const gwY = by + bh - 18;
+      el("rect", {class:"zone", id:`gw-${c.name}`, x:x+10, y:gwY-13, width:L.CW-20, height:20, rx:4,
+                  fill:"none", stroke:LANE_COLOR.gateway, "stroke-width":1.2});
+      el("text", {class:"m", x:x+L.CW/2, y:gwY+1, "font-size":L.fs.gw, "text-anchor":"middle",
+                  fill:LANE_COLOR.gateway}, L.narrow ? "gateway" : "multicluster gateway");
+    }
+  });
+
+  // One arc per OBSERVED route: source cluster, exposure mode, destination.
+  //
+  // Every cluster runs its own load generator -- FM4 takes out two clusters at
+  // once, so load driven only from west would stop the experiment rather than
+  // measure it -- and each generator's proxy is its own measurement surface.
+  // Drawing all of them is what makes a dying cluster's generator going dark
+  // visible rather than merely absent from a table.
+  //
+  // Routes are discovered from the feed rather than enumerated. The full cross
+  // product is 27 arcs and most of it never exists: a flat mirror resolves to
+  // exactly one cluster, and east carries no gateway link at all. Drawing only
+  // what has actually been observed keeps the picture to the dozen or so links
+  // that are real.
+  const idx = Object.fromEntries(cl.map((c, i) => [c.name, i]));
+
+  const ordered = routes.slice().sort((p, q) =>
+    (idx[p.src] - idx[q.src]) || (MODES.indexOf(p.mode) - MODES.indexOf(q.mode)) ||
+    (idx[p.dst] - idx[q.dst]));
+
+  // Where a lane leaves and lands: the column of the workload that actually
+  // serves it, so an arc points at the pods on the other end rather than at the
+  // cluster in general. Gateway arcs land on the gateway chip, because that is
+  // the hop they really take.
+  // Anchors are points, not just an x: the wide layout leaves the bottom edge of
+  // a box, the stacked one leaves the right edge.
+  const anchor = (cluster, mode) => {
+    const {x, y, h} = boxes[idx[cluster]];
+    const isGw = mode === "gateway" && (sample.gateways || []).includes(cluster);
+    const here = wl.filter(w => w.clusters.includes(cluster));
+    const wi = here.findIndex(w => w.mode === mode);
+
+    if (L.narrow){
+      // Right edge, split by mode so three lanes do not sit on one point.
+      return {x: x + L.CW, y: y + 46 + MODES.indexOf(mode) * 26, side:"right"};
+    }
+    if (isGw || wi < 0) return {x: x + L.CW/2, y: y + h, side:"bottom"};
+    const step = (L.CW - 62 - 14) / Math.max(here.length, 1);
+    return {x: x + 62 + wi * step + step/2, y: y + h, side:"bottom"};
+  };
+
+  // Gutter available to arcs in the stacked layout, so the box never grows.
+  const gutterMax = L.W - (L.PAD + L.CW) - 12;
+  const spanOf = (i) => ordered.length < 2 ? gutterMax * 0.5
+    : 12 + (i / (ordered.length - 1)) * (gutterMax - 12);
+
+  ordered.forEach((r, i) => {
+    const a = anchor(r.src, r.mode), b = anchor(r.dst, r.mode);
+    const depth = L.narrow ? spanOf(i) : 26 + i * 13 + idx[r.src] * 10;
+    let d;
+    if (L.narrow){
+      // Traffic a cluster serves itself needs two distinct points or the arc
+      // collapses to zero width.
+      const y0 = r.src === r.dst ? a.y - 9 : a.y;
+      const y1 = r.src === r.dst ? b.y + 9 : b.y;
+      d = `M${a.x},${y0} C${a.x+depth},${y0} ${b.x+depth},${y1} ${b.x},${y1}`;
+    } else {
+      const x0 = r.src === r.dst ? a.x - 22 : a.x;
+      const x1 = r.src === r.dst ? b.x + 22 : b.x;
+      d = `M${x0},${a.y} C${x0},${a.y+depth} ${x1},${b.y+depth} ${x1},${b.y}`;
+    }
+    el("path", {class:"edge idle", id:edgeId(r), stroke:LANE_COLOR[r.mode], d});
+  });
+
+  const spread = L.narrow ? gutterMax
+    : (ordered.length ? 26 + (ordered.length - 1) * 13 +
+        idx[ordered[ordered.length-1].src] * 10 : 40);
+
+  const lastBox = boxes[cl.length - 1];
+  const H = L.narrow ? lastBox.y + lastBox.h + 60
+                     : lastBox.y + lastBox.h + spread + 62;
+  // Fixed in the stacked layout: the arcs are fitted to the box, not the box to
+  // the arcs, so the scale -- and therefore the type size -- never moves.
+  const VW = L.W;
+  svg.setAttribute("viewBox", `0 0 ${VW} ${H}`);
+
+  if (!L.narrow){
+    el("text", {class:"m", x:VW/2, y:H-40, "font-size":11, "text-anchor":"middle"},
+       "each arc leaves the cluster whose load generator sent the request — width and speed are the measured rate");
+  }
+
+  // Legend. Stacked mode has no room for a three-across row.
+  const lw = L.narrow ? 106 : 172;
+  const lx = L.narrow ? L.PAD : VW/2 - 250;
+  MODES.forEach((m, k) => {
+    const x = lx + k * lw;
+    const ly = H - (L.narrow ? 22 : 16);
+    el("line", {class:"edge", x1:x, y1:ly, x2:x+22, y2:ly, stroke:LANE_COLOR[m],
+                "stroke-width":4, "stroke-linecap":"round"});
+    el("text", {class:"m", x:x+28, y:ly+4, "font-size":L.narrow ? 10.5 : 11,
+                fill:LANE_COLOR[m]}, m);
+  });
+
+  built = signature(sample, routes);
+}
+
+// --- render ----------------------------------------------------------------
+
+function draw(s){
+  const cl = s.topology || [];
+  // Routes come from the whole feed, not this sample: a link that goes quiet
+  // during a failure must keep its place in the picture rather than vanish and
+  // reappear, which would read as the topology changing.
+  //
+  // Unplaceable destinations are dropped from the DRAWING only. "other" is the
+  // bucket for an endpoint whose cluster could not be determined -- it has no
+  // box, so an arc to it has no end, and the geometry silently produced NaN
+  // coordinates the browser rejected path by path. It still appears in the
+  // distribution bars and in the note that explains it, which is the honest
+  // place for "we do not know where this went".
+  const names = new Set(cl.map(c => c.name));
+  const routes = discoverRoutes(samples).filter(r => names.has(r.src) && names.has(r.dst));
+  if (cl.length && signature(s, routes) !== built) build(s, routes);
+
+  $("phase").textContent = s.phase || "—";
+  $("phase").className = "pill" + (s.phase && s.phase !== "baseline" && s.phase !== "unknown" ? " hot" : "");
+  const warming = Object.values(s.sources || {}).some(x => x.warmup);
+  $("feedkind").textContent = warming ? "warmup — first sample reads zero by design"
+                            : s.keyframe ? "replay · keyframe" : "live sample";
+  $("feedkind").className = "pill" + (warming ? "" : s.keyframe ? "" : " live");
+  $("observer").textContent = s.observer || "—";
+  $("flavor").textContent = s.flavor || "—";
+  $("window").textContent = (s.window || s.interval || "—") + "s";
+  $("clock").textContent = s.iso || new Date((s.t||0)*1000).toISOString().replace("T"," ").replace("Z"," UTC");
+  $("pos").textContent = `${cursor+1} / ${samples.length}`;
+
+  drawTopology(s, routes);
+  drawRouteTable(s, routes);
+  drawK8s(s);
+  drawSources(s);
+  drawNotes(s);
+  announce(s);
+}
+
+// The diagram as a table: every route with its measured rate.
+//
+// Also the only way to read a route on a touch screen -- the per-arc tooltips
+// are SVG <title> elements, which require a hover that a finger cannot make.
+function drawRouteTable(s, routes){
+  const win = s.window || s.interval || 5;
+  const rows = routes.map(r => {
+    const src = (s.sources || {})[r.src];
+    const lane = src && src.modes && src.modes[r.mode];
+    const n = lane && lane.dist ? (lane.dist[r.dst] || 0) : 0;
+    return {...r, rps:n / win, reqs:n, errors:lane ? lane.errors : 0};
+  }).filter(r => r.reqs > 0)
+    .sort((a, b) => b.rps - a.rps);
+
+  const t = $("routetable");
+  if (!rows.length){
+    t.innerHTML = `<tbody><tr><td>No traffic in this window.</td></tr></tbody>`;
+  } else {
+    t.innerHTML =
+      `<thead><tr><th>From</th><th>To</th><th>Mode</th>` +
+      `<th class="num">Rate</th><th class="num">Requests</th><th class="num">Errors</th></tr></thead><tbody>` +
+      rows.map(r =>
+        `<tr><td>${r.src}</td><td>${r.dst}${r.src === r.dst ? " (local)" : ""}</td>` +
+        `<td>${r.mode}</td>` +
+        `<td class="num">${r.rps.toFixed(1)} rps</td>` +
+        `<td class="num">${r.reqs}</td>` +
+        `<td class="num${r.errors > 0 ? " bad" : ""}">${r.errors}</td></tr>`).join("") +
+      `</tbody>`;
+  }
+
+  // A concise label for the diagram itself, regenerated per sample. It was a
+  // fixed string that never said anything about the state being shown.
+  const live = Object.keys(s.sources || {}).filter(n => (s.sources[n].status || "") === "up");
+  $("topo").setAttribute("aria-label",
+    `Cross-cluster traffic, ${s.phase || "unknown"} phase. ` +
+    `${live.length} of ${(s.topology || []).length} clusters reporting. ` +
+    `${rows.length} active routes. Full detail in the table below.`);
+}
+
+// Announce what changed, not every number.
+//
+// A live feed rewrites every figure on screen every few seconds. Putting that
+// in a live region would make the page unusable with a screen reader on, so
+// this only speaks when the state actually moves: phase, cluster health, or the
+// appearance of errors or plaintext.
+let lastSpoken = "";
+function announce(s){
+  const bad = [];
+  for (const name in (s.sources || {})){
+    const src = s.sources[name];
+    if (src.status && src.status !== "up" && src.status !== "unknown") bad.push(`${name} ${src.status}`);
+    for (const m in (src.modes || {})){
+      if (src.modes[m].errors > 0) bad.push(`${name} ${m} errors`);
+      if (src.modes[m].nontls > 0) bad.push(`${name} ${m} plaintext`);
+    }
+  }
+  const msg = `Phase ${s.phase || "unknown"}. ` +
+    (bad.length ? bad.join(", ") : "All clusters reporting, no errors, mTLS intact") + ".";
+  if (msg === lastSpoken) return;
+  lastSpoken = msg;
+  $("live").textContent = msg;
+}
+
+function statusOf(s, name){
+  const src = (s.sources || {})[name];
+  return src ? src.status : "unknown";
+}
+
+function drawTopology(s, routes){
+  const cl = s.topology || [];
+  if (!cl.length) return;
+
+  cl.forEach(c => {
+    const st = statusOf(s, c.name);
+    const box = document.getElementById(`box-${c.name}`);
+    if (!box) return;
+    const info = statusInfo(st);
+    const dead = info.dead;
+    box.setAttribute("class", "box" + (st === "up" ? "" : " " + st));
+    const lbl = document.getElementById(`st-${c.name}`);
+    if (lbl){
+      lbl.textContent = info.label;
+      lbl.setAttribute("fill", st === "down" ? "var(--dead)"
+                             : st === "unknown" ? "var(--muted)" : "var(--fault)");
+    }
+    document.getElementById(`name-${c.name}`)
+      ?.setAttribute("class", dead ? "t gone" : "t");
+    (s.workloads || []).forEach(w => {
+      if (!w.clusters.includes(c.name)) return;
+      (s.zones || []).forEach(z => {
+        const dot = document.getElementById(`pod-${c.name}-${w.name}-${z}`);
+        if (!dot) return;
+        dot.setAttribute("class", dead ? "pod off" : "pod");
+        // Colour carries the exposure mode; grey overrides it when the cluster
+        // is gone, so the fill has to be reset rather than left set.
+        dot.style.fill = dead ? "var(--dead)" : LANE_COLOR[w.mode];
+      });
+    });
+    const gw = document.getElementById(`gw-${c.name}`);
+    if (gw) gw.setAttribute("stroke", dead ? "var(--dead)" : LANE_COLOR.gateway);
+  });
+
+  const win = s.window || s.interval || 5;
+  const rateOf = (r) => {
+    const src = (s.sources || {})[r.src];
+    const lane = src && src.modes && src.modes[r.mode];
+    return lane && lane.dist ? (lane.dist[r.dst] || 0) / win : 0;
+  };
+
+  // Width and speed both encode the ABSOLUTE rate, on one scale shared by every
+  // arc in the frame -- across sources as well as across modes.
+  //
+  // The obvious alternative -- width from each destination's share of its own
+  // lane -- draws a dead mode serving 0.4 rps to its last surviving endpoint as
+  // thickly as a healthy one serving 30, because that endpoint is 100% of what
+  // is left. The picture would then contradict the numbers printed beside it,
+  // and comparing the lanes to each other is the entire point.
+  const peak = Math.max(0, ...routes.map(rateOf));
+
+  routes.forEach(r => {
+    const p = document.getElementById(edgeId(r));
+    if (!p) return;
+    const rps = rateOf(r);
+    let title = p.querySelector("title");
+    if (!title){ title = document.createElementNS("http://www.w3.org/2000/svg","title"); p.appendChild(title); }
+
+    if (!rps){
+      p.setAttribute("class", "edge idle");
+      p.style.animationDuration = "";
+      p.setAttribute("stroke-width", 1.2);
+      p.setAttribute("opacity", "");
+      title.textContent = `${r.src} → ${r.dst} (${r.mode}): no traffic in this window`;
+      return;
+    }
+    const lane = s.sources[r.src].modes[r.mode];
+    // sqrt so a lane two orders of magnitude down is thin but still visible.
+    const scale = peak > 0 ? Math.sqrt(rps / peak) : 0;
+    p.setAttribute("class", "edge flow" + (lane.errors > 0 ? " err" : ""));
+    p.setAttribute("stroke-width", (1.8 + scale * 5.2).toFixed(2));
+    p.setAttribute("opacity", (0.4 + scale * 0.6).toFixed(2));
+    p.style.animationDuration = Math.max(0.3, Math.min(2.6, 1.6 / Math.max(scale, 0.06))).toFixed(2) + "s";
+    title.textContent = `${r.src} → ${r.dst} (${r.mode}): ${rps.toFixed(1)} rps`;
+  });
+}
+
+function drawK8s(s){
+  const cl = s.topology || [];
+  const host = $("k8s");
+  host.innerHTML = "";
+  let allReady = true, recorded = false;
+  cl.forEach(c => {
+    const src = (s.sources || {})[c.name];
+    // The cluster tier only knows whether nodes exist and answer. A partitioned
+    // cluster whose containers are still running looks Ready from here -- which
+    // is the point.
+    const known = src && src.nodes !== undefined;
+    if (known) recorded = true;
+    const ready = known ? src.nodes > 0 : null;
+    if (ready === false) allReady = false;
+    const d = document.createElement("div");
+    if (ready === false) d.className = "bad";
+    d.innerHTML = `<div class="n">${c.name}</div><div class="s">` +
+      (ready === null ? "not recorded" : (ready ? `Ready · ${src.nodes}/3 nodes` : `NotReady · ${src.nodes}/3 nodes`)) +
+      `</div>`;
+    host.appendChild(d);
+  });
+
+  const meshBad = anyMeshDegraded(s);
+  const note = $("k8snote");
+  if (!recorded){
+    note.className = "note";
+    note.textContent = "Recorded runs capture the observer's proxy metrics only, so node state was never written down. Shown as unknown rather than guessed from the traffic.";
+  } else if (allReady && meshBad){
+    note.className = "note warn";
+    note.textContent = "Every cluster is Ready and the mesh tier is degraded. This is the whole exercise: a green cluster dashboard is not a claim about the mesh.";
+  } else if (allReady){
+    note.className = "note";
+    note.textContent = "All clusters Ready. Mesh tier nominal.";
+  } else {
+    note.className = "note";
+    note.textContent = "The cluster tier can see this one. Compare against the modes below: the same fault is loud in one exposure mode and silent in another.";
+  }
+}
+
+function anyMeshDegraded(s){
+  for (const name in (s.sources || {})){
+    const src = s.sources[name];
+    // A source with NO status makes no claim about the mesh -- it is a
+    // node-state-only entry from a recorded run, where the observer's proxy
+    // metrics are the only mesh evidence that exists. Treating undefined as
+    // degraded made every replay's baseline frame announce "the mesh tier is
+    // degraded" about a perfectly healthy rig, which is the worst possible
+    // place for this page to cry wolf.
+    // "no-generator" is healthy too: LOAD_CLUSTERS defaults to west alone, so
+    // the other clusters have no client-side metrics BY DESIGN. Counting that
+    // as degradation made this page announce "the mesh tier is degraded" about
+    // a rig serving 30 rps on every mode with zero errors and full mTLS --
+    // the same cry-wolf the undefined-status fix was written to stop, arriving
+    // through a status that did not exist when that fix was made.
+    if (src.status !== undefined && !["up", "unknown", "no-generator"].includes(src.status)) return true;
+    for (const m in (src.modes || {})){
+      if (src.modes[m].errors > 0 || src.modes[m].nontls > 0) return true;
+    }
+  }
+  return false;
+}
+
+// One card per cluster, because every cluster runs its own load generator and
+// each one's proxy is its own measurement surface. During FM2 and FM4 the point
+// is watching a generator go dark while the survivors carry on -- which is only
+// visible if the survivors were on screen to begin with.
+function drawSources(s){
+  const host = $("sources");
+  host.innerHTML = "";
+  const win = s.window || s.interval || 5;
+  const cl  = (s.topology || []).map(c => c.name);
+
+  cl.forEach(name => {
+    const src = (s.sources || {})[name];
+    const card = document.createElement("section");
+    card.className = "card";
+
+    const role = name === s.observer ? "observer" : "";
+    // The comma is read aloud and never drawn: without a separator the heading
+    // announces as "westobserver".
+    card.innerHTML = `<h2><span>${name}</span>` +
+      (role ? `<em><span class="sr-only">, </span>${role}</em>` : "") + `</h2>`;
+
+    if (!src || !src.modes || !Object.keys(src.modes).length){
+      const why = !src ? "not recorded"
+                : (statusInfo(src.status).card || "no traffic recorded");
+      card.innerHTML += `<div class="lane absent"><div class="lane-nums">` +
+        `<span class="u">${why}</span></div></div>`;
+      host.appendChild(card);
+      return;
+    }
+
+    MODES.forEach(m => {
+      const lane = src.modes[m];
+      const div = document.createElement("div");
+      div.className = "lane" + (lane ? "" : " absent");
+
+      if (!lane){
+        // Not a zero: the mirror does not exist here. modes_for in
+        // clusters/lib.sh omits the gateway row for a cluster with no gateway
+        // link, and "no such service" is a different fact from "no traffic".
+        div.innerHTML = `<div class="lane-head"><span class="name">${m}</span></div>` +
+          `<div class="lane-nums"><span class="u">not resolvable from ${name} — no link of this kind</span></div>`;
+        card.appendChild(div);
+        return;
+      }
+
+      const rps = lane.reqs / win;
+      const parts = cl.concat(["other"]).map(c => [c, (lane.dist && lane.dist[c]) || 0])
+                      .filter(p => p[1] > 0);
+      const total = parts.reduce((a,p) => a + p[1], 0) || 1;
+
+      // The source's own bucket sorts first and keeps full strength: "how much
+      // stayed local" is the comparison the federated mode exists to make, and
+      // a stable order stops segments from swapping shade between samples.
+      parts.sort((a, b) => (a[0] === name ? -1 : b[0] === name ? 1 :
+                            a[0] === "other" ? 1 : b[0] === "other" ? -1 :
+                            cl.indexOf(a[0]) - cl.indexOf(b[0])));
+
+      const styleFor = (c, i) => c === "other"
+        ? "background:var(--fault)"
+        : `background:${LANE_COLOR[m]};opacity:${DEST_OPACITY[Math.min(i, DEST_OPACITY.length-1)]}`;
+
+      const bar = parts.map(([c,n],i) =>
+        `<i style="width:${(n/total*100).toFixed(1)}%;${styleFor(c,i)}"></i>`).join("");
+      const key = parts.map(([c,n],i) =>
+        `<span><span class="sw" style="${styleFor(c,i)}"></span>${c}${c===name?" (local)":""} <b>${Math.round(n/total*100)}%</b></span>`).join("");
+
+      div.innerHTML =
+        `<div class="lane-head"><span class="name">${m}</span>` +
+          `<span class="svc">${lane.svc}</span></div>` +
+        `<div class="lane-nums">` +
+          `<span class="rps">${rps.toFixed(1)}<span class="u"> rps</span></span>` +
+          `<span class="u">${lane.reqs} reqs / ${win}s</span>` +
+          (lane.errors > 0 ? `<span class="tag bad">${lane.errors} err</span>` : `<span class="tag">0 err</span>`) +
+          (lane.nontls > 0 ? `<span class="tag bad">${lane.nontls} plaintext</span>` : `<span class="tag">mTLS</span>`) +
+          (lane.pool != null ? `<span class="tag">pool ${lane.pool}${lane.active != null && lane.active !== lane.pool ? ` · active ${lane.active}` : ""}</span>` : "") +
+        `</div>` +
+        (parts.length ? `<div class="bar">${bar}</div><div class="bar-key">${key}</div>`
+                      : `<div class="bar"></div><div class="bar-key"><span>` +
+                        (exercised(samples).has(name + "|" + m)
+                          ? "no traffic in this window"
+                          : "never exercised in this recording") + `</span></div>`);
+
+      card.appendChild(div);
+    });
+
+    host.appendChild(card);
+  });
+}
+
+function drawNotes(s){
+  const win = s.window || s.interval || 5;
+  const notes = [];
+
+  // Throughput, not error rate, is the honest signal. A request that never
+  // completes never increments response_total, so a mode can be effectively
+  // dead at zero errors -- FINDINGS.md calls this out as the result that
+  // matters more than the headline. Say it where someone is reading a 0.
+  // Grouped by mode rather than emitted per source: one fault silences the same
+  // mode in every cluster that resolves it, and four copies of one sentence
+  // buries the sentence.
+  const ever = exercised(samples);
+  const silent = {}, never = {};
+  for (const name in (s.sources || {})){
+    const modes = (s.sources[name].modes) || {};
+    const rates = {};
+    MODES.forEach(m => { if (modes[m]) rates[m] = modes[m].reqs / win; });
+    const best = Math.max(0, ...Object.values(rates));
+    if (best <= 0) continue;
+    const busiest = Object.keys(rates).find(k => rates[k] === best);
+    MODES.forEach(m => {
+      const lane = modes[m];
+      if (!lane || lane.errors > 0) return;
+      const share = rates[m] / best;
+      if (share >= 0.25) return;
+      if (!ever.has(name + "|" + m)){
+        (never[m] = never[m] || []).push(name);
+        return;
+      }
+      (silent[m] = silent[m] || {srcs:[], share, busiest}).srcs.push(name);
+      silent[m].share = Math.max(silent[m].share, share);
+    });
+  }
+  for (const m in never){
+    notes.push(["",
+      `<b>${m}</b> carried no traffic at any point in this recording (from ${never[m].join(" and ")}). ` +
+      `That is a lane the load generator never drove, not a lane that failed — reading it as a ` +
+      `collapse would invert the result.`]);
+  }
+  for (const m in silent){
+    const {srcs, share, busiest} = silent[m];
+    notes.push(["warn",
+      `<b>${m}</b> is carrying ${Math.round(share * 100)}% of what ${busiest} is carrying ` +
+      `(from ${srcs.join(" and ")}), at zero errors. That is a silent failure — a request that ` +
+      `never completes never increments the counter, so an SLO written on error rate would not ` +
+      `have fired.`]);
+  }
+
+  const plaintext = [];
+  for (const name in (s.sources || {})){
+    for (const m in (s.sources[name].modes || {})){
+      if (s.sources[name].modes[m].nontls > 0) plaintext.push(`${name}/${m}`);
+    }
+  }
+  if (plaintext.length){
+    notes.push(["warn",
+      `Plaintext on ${plaintext.join(", ")}. Meshed peers accept unmeshed traffic under the default ` +
+      `all-unauthenticated inbound policy, so nothing errors and nothing alerts.`]);
+  }
+
+  const unmeshed = Object.keys(s.sources || {}).filter(n => s.sources[n].status === "unmeshed");
+  if (unmeshed.length){
+    notes.push(["warn",
+      `<b>${unmeshed.join(", ")}</b> came back Running and Ready with no linkerd-proxy. ` +
+      `Injection is a mutating admission webhook with failurePolicy Ignore, so pods admitted while ` +
+      `the injector was unavailable never get a proxy and nothing retries. Traffic to them is ` +
+      `plaintext, authorization policy is unenforced, and they are missing from proxy metrics — ` +
+      `including this page. The cluster tier shows them Ready.`]);
+  }
+
+  if (s.node_table === false){
+    notes.push(["warn",
+      'Node address table missing, so gateway-mode endpoints cannot be attributed to a cluster and ' +
+      'fall into "other". That is unknown attribution, not unknown destination.']);
+  }
+
+  if (!notes.length){
+    notes.push(["", "Deltas over the window, per series. Counters are never shown cumulatively: " +
+      "during an outage a cumulative view still credits the dead cluster with everything it " +
+      "served beforehand."]);
+  }
+
+  const note = $("lanenote");
+  note.innerHTML = notes.map(([k, t]) => `<div class="note ${k}">${t}</div>`).join("");
+}
+
+// --- controls --------------------------------------------------------------
+
+$("scrub").addEventListener("input", (e) => {
+  cursor = Number(e.target.value);
+  follow = cursor >= samples.length - 1;
+  $("follow").setAttribute("aria-pressed", String(follow));
+  $("follow").textContent = follow ? "following" : "paused";
+  if (samples[cursor]) draw(samples[cursor]);
+});
+
+$("follow").addEventListener("click", () => {
+  follow = !follow;
+  $("follow").setAttribute("aria-pressed", String(follow));
+  $("follow").textContent = follow ? "following" : "paused";
+  if (follow && samples.length){
+    cursor = samples.length - 1;
+    $("scrub").value = cursor;
+    draw(samples[cursor]);
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  cursor = Math.max(0, Math.min(samples.length - 1, cursor + (e.key === "ArrowRight" ? 1 : -1)));
+  follow = cursor >= samples.length - 1;
+  $("scrub").value = cursor;
+  $("follow").setAttribute("aria-pressed", String(follow));
+  $("follow").textContent = follow ? "following" : "paused";
+  if (samples[cursor]) draw(samples[cursor]);
+});
+
+let poller = null;
+
+// Everything derived from the old feed has to go, or the new run inherits the
+// previous one's scaffold and route set.
+function switchFeed(url){
+  FEED = url;
+  samples = [];
+  lastLength = -1;
+  cursor = 0;
+  follow = true;
+  built = null;
+  routeCache = {n:-1, routes:[]};
+  exercisedCache = {n:-1, set:null};
+  $("topo").innerHTML = "";
+  const u = new URL(location.href);
+  u.searchParams.set("feed", url);
+  history.replaceState(null, "", u);
+  tick();
+}
+
+// The manifest is optional: the published site has one, a local console does
+// not, and the selector simply stays hidden when it is absent.
+async function loadManifest(){
+  let m;
+  try {
+    const res = await fetch(MANIFEST, {cache:"no-store"});
+    if (!res.ok) return;
+    m = await res.json();
+  } catch (e) { return; }
+  if (!m || !Array.isArray(m.feeds) || !m.feeds.length) return;
+
+  const pick = $("pick");
+  pick.innerHTML = m.feeds.map(f =>
+    `<option value="${f.file}">${f.label} — ${f.samples} keyframes, from ${f.observer}</option>`
+  ).join("");
+  pick.hidden = false;
+
+  const wanted = params.get("feed");
+  const match = m.feeds.find(f => f.file === wanted);
+  pick.value = match ? match.file : m.feeds[0].file;
+  pick.addEventListener("change", () => switchFeed(pick.value));
+  if (!match) switchFeed(pick.value);
+}
+
+let resizeTimer = null;
+addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (samples[cursor]) draw(samples[cursor]);
+  }, 150);
+});
+
+async function tick(){
+  try {
+    await load();
+    if (poller && samples.length && samples.every(x => x.keyframe)){
+      clearInterval(poller); poller = null;
+      $("src").textContent += "  (complete)";
+    }
+  }
+  catch (e){
+    $("feedkind").textContent = "feed unavailable";
+    $("feedkind").className = "pill hot";
+    $("src").textContent = String(e.message || e);
+  }
+}
+
+tick();
+if (!inline){
+  poller = setInterval(tick, POLL_MS);
+  loadManifest();
+}
+</script>
+</body>
+</html>

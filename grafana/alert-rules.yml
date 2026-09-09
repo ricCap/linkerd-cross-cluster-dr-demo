@@ -1,0 +1,434 @@
+# Prometheus recording and alerting rules for the DR exercise.
+#
+# Prometheus-managed, not Grafana-managed, on purpose: these rules are part of
+# the deliverable and should paste into a reader's own Prometheus. A
+# Grafana-managed rule lives in Grafana's database and does not travel.
+# Grafana still lists these read-only under
+# Alerting -> Alert rules -> Data source-managed, and the dashboard's alert
+# timeline is drawn from the ALERTS series Prometheus emits while firing.
+#
+# THE ORGANISING FINDING
+#
+# Going mode by mode through results/FINDINGS.md, every failure is caught by
+# "something stopped" or "something is unreachable". NONE is caught by
+# "something returned an error". FM1a produced zero errors; FM2's flat mirror
+# produced two while serving 2% of expected traffic; FM3 produced none at all.
+# Error-rate alerting is the instinct and it is the wrong instinct here.
+#
+# Labels the dashboard depends on:
+#   failure_mode = fm1|fm2|fm3|fm4|cross|none
+#   origin       = article|mesh
+#
+# The `article` rules are a FOIL: Buoyant's "SLOs from Mesh Metrics" playbook,
+# reproduced verbatim, expected NOT to fire during faults that take a service
+# down. That negative result is the point. Do not "fix" them.
+
+groups:
+
+  # ---------------------------------------------------------------------------
+  # Recording rules
+  # ---------------------------------------------------------------------------
+  - name: dr-sli
+    interval: 10s
+    rules:
+      # Named to match the article so the post can quote rule and alert together.
+      #
+      # target_port!="4191" drops kubelet probing the proxy admin port, which is
+      # the largest group of inbound series in this rig (143 vs 39 for the app's
+      # own port). Negative matcher on purpose: PromQL treats an absent label as
+      # "", so this degrades to matching everything if the label ever
+      # disappears, where target_port="9898" would silently select nothing.
+      # Scoped to the app namespace, not fleet-wide.
+      #
+      # Measured unscoped, on a completely healthy rig: 99.876% -- under the
+      # 99.9% target, so the foil alert fired at rest. All of the failing
+      # traffic was namespace="linkerd" (control-plane gRPC, which Linkerd
+      # classifies on grpc-status, so it is a failure carrying status_code=200).
+      # The demo workload was at exactly 100%. A foil that fires on
+      # infrastructure noise demonstrates nothing about the fault, and the
+      # article's own SLI is per-workload anyway.
+      - record: sli:availability:ratio_rate5m
+        expr: |
+          sum(rate(response_total{direction="inbound", namespace="dr-demo", target_port!="4191", classification="success"}[5m]))
+          / clamp_min(sum(rate(response_total{direction="inbound", namespace="dr-demo", target_port!="4191"}[5m])), 0.001)
+
+      - record: sli:availability:ratio_rate1h
+        expr: |
+          sum(rate(response_total{direction="inbound", namespace="dr-demo", target_port!="4191", classification="success"}[1h]))
+          / clamp_min(sum(rate(response_total{direction="inbound", namespace="dr-demo", target_port!="4191"}[1h])), 0.001)
+
+      # Measured OUTBOUND at the client. Inbound is what the article uses and it
+      # cannot work for cross-cluster DR: when a cluster dies its proxies stop
+      # reporting, so an inbound ratio is computed over the survivors and reads
+      # healthy because the fleet shrank.
+      - record: mesh:mode_throughput:rate1m
+        expr: |
+          sum by (cluster, authority) (rate(response_total{direction="outbound",
+            authority=~"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\..*"}[1m]))
+
+      - record: mesh:mode_throughput:rate5m
+        expr: |
+          sum by (cluster, authority) (rate(response_total{direction="outbound",
+            authority=~"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\..*"}[5m]))
+
+      - record: mesh:mode_throughput:rate15m
+        expr: |
+          sum by (cluster, authority) (rate(response_total{direction="outbound",
+            authority=~"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\..*"}[15m]))
+
+      # Flavor-independent federation membership. Under BEL, endpoints{ready} is
+      # the zone-local ACTIVE subset (3), not the pool (9), so alerting on it
+      # directly fails on BEL for reasons unrelated to federation.
+      - record: mesh:federated_endpoints:available
+        expr: |
+          max by (cluster) (outbound_http_balancer_adaptive_endpoints{parent_name="app-federated"})
+          or max by (cluster) (outbound_http_balancer_endpoints{endpoint_state="ready", parent_name="app-federated"})
+
+      - record: mesh:mode_latency_p95:rate1m
+        expr: |
+          histogram_quantile(0.95, sum by (cluster, authority, le) (
+            rate(response_latency_ms_bucket{direction="outbound",
+              authority=~"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\..*"}[1m])))
+
+      - record: mesh:mode_latency_p95:rate30m
+        expr: |
+          histogram_quantile(0.95, sum by (cluster, authority, le) (
+            rate(response_latency_ms_bucket{direction="outbound",
+              authority=~"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\..*"}[30m])))
+
+  # ---------------------------------------------------------------------------
+  # The foil: a by-the-book SLO set, expected to stay silent
+  # ---------------------------------------------------------------------------
+  - name: dr-slo-foil
+    interval: 10s
+    rules:
+      - alert: SLOAvailabilityBreach
+        expr: sli:availability:ratio_rate5m < 0.999
+        for: 2m
+        labels: { severity: warning, origin: article, failure_mode: none }
+        annotations:
+          summary: "Availability SLI below 99.9%"
+          description: >-
+            The naive rule the playbook warns against. Expected to stay silent
+            even through a total outage: a hung request lands in neither
+            numerator nor denominator, so the ratio survives because the
+            denominator collapsed with it.
+
+      - alert: SLOErrorBudgetFastBurn
+        expr: (1 - sli:availability:ratio_rate1h) / (1 - 0.999) > 14.4
+        for: 2m
+        labels: { severity: critical, origin: article, failure_mode: none }
+        annotations:
+          summary: "Error budget burning at {{ $value | printf \"%.2f\" }}x"
+          description: >-
+            The playbook's fast-burn rule, verbatim. Crossing 14.4x needs ~52s
+            of solid 5xx at 30 rps. Measured FM2: flat mirror 0.02x, gateway
+            mirror 1.45x. The 2m pending window also means a 90s fault cannot
+            trip it.
+
+      - alert: SLORequestRateFloor
+        expr: |
+          mesh:mode_throughput:rate5m / clamp_min(mesh:mode_throughput:rate15m, 0.001) < 0.2
+        for: 2m
+        labels: { severity: warning, origin: article, failure_mode: none }
+        annotations:
+          summary: "{{ $labels.authority }} at {{ $value | printf \"%.0f%%\" }} of baseline"
+          description: >-
+            The playbook's throughput SLO, the same instinct as this repo's own
+            assertion. But a fault must cover ~80% of the 5m window to fall
+            under 20%, about 4 minutes. Over 90s it only reaches ~70%.
+
+  # ---------------------------------------------------------------------------
+  # FM1 -- the mesh control plane
+  # ---------------------------------------------------------------------------
+  - name: dr-control-plane
+    interval: 10s
+    rules:
+      # FM1a produced zero errors and no traffic impact. No traffic-derived
+      # alert can catch it; liveness is the only signal that exists.
+      - alert: LinkerdDestinationDown
+        expr: up{job="linkerd-controller", component="destination"} == 0
+        for: 30s
+        labels: { severity: critical, origin: mesh, failure_mode: fm1 }
+        annotations:
+          summary: "linkerd-destination down in {{ $labels.cluster }}"
+          description: >-
+            Endpoint discovery is frozen. Measured: the pool stayed at 9 for 90s
+            after three of those pods were deleted, with zero errors, because
+            the proxy routed around them on its own. Traffic is fine; the mesh's
+            view of the world is stuck.
+
+      - alert: LinkerdIdentityDown
+        expr: up{job="linkerd-controller", component="identity"} == 0
+        for: 30s
+        labels: { severity: critical, origin: mesh, failure_mode: fm1 }
+        annotations:
+          summary: "linkerd-identity down in {{ $labels.cluster }}"
+          description: >-
+            Existing proxies keep serving on certificates they already hold. New
+            pods cannot get one and stall in Init:1/2 indefinitely. Your
+            failover plan requires scaling up, and scaling up requires identity.
+            See LinkerdCertificateHeadroomLow for the deadline.
+
+      - alert: LinkerdProxyInjectorDown
+        expr: up{job="linkerd-controller", component="proxy-injector"} == 0
+        for: 30s
+        labels: { severity: critical, origin: mesh, failure_mode: fm1 }
+        annotations:
+          summary: "linkerd-proxy-injector down in {{ $labels.cluster }}"
+          description: >-
+            With the default failurePolicy=Ignore, pods created now are admitted
+            WITHOUT a proxy and nothing retries. Their meshed peers accept the
+            plaintext happily. Reproduced three times here. Expect
+            NonMTLSTrafficDetected to follow.
+
+      - alert: LinkerdControlPlaneComponentDown
+        expr: |
+          up{job="linkerd-controller", component!~"destination|identity|proxy-injector"} == 0
+        for: 1m
+        labels: { severity: warning, origin: mesh, failure_mode: fm1 }
+        annotations:
+          summary: "linkerd {{ $labels.component }} down in {{ $labels.cluster }}"
+          description: >-
+            Catch-all for control plane components without a dedicated rule.
+
+      # Measured headroom at rest here is 23h50m, so 12h/6h are real thresholds
+      # rather than round numbers.
+      - alert: LinkerdCertificateHeadroomLow
+        expr: min by (cluster) (control_identity_cert_expiration_timestamp_seconds - time()) < 43200
+        for: 5m
+        labels: { severity: warning, origin: mesh, failure_mode: fm1 }
+        annotations:
+          summary: "{{ $labels.cluster }} has {{ $value | humanizeDuration }} of certificate headroom"
+          description: >-
+            How long this cluster's data plane can serve if linkerd-identity is
+            unavailable. This is the runbook number for an identity outage.
+
+      - alert: LinkerdCertificateHeadroomCritical
+        expr: min by (cluster) (control_identity_cert_expiration_timestamp_seconds - time()) < 21600
+        for: 1m
+        labels: { severity: critical, origin: mesh, failure_mode: fm1 }
+        annotations:
+          summary: "{{ $labels.cluster }} has {{ $value | humanizeDuration }} of certificate headroom"
+          description: >-
+            Under six hours. Proxies start losing identity at zero, and no new
+            pod has joined the mesh since identity went away.
+
+  # ---------------------------------------------------------------------------
+  # FM2 / FM4 -- cluster and region
+  # ---------------------------------------------------------------------------
+  - name: dr-topology
+    interval: 10s
+    rules:
+      # `for: 15s` deliberately: these faults converge in 6-82 seconds, and an
+      # alert with a 2m pending window cannot describe them at all.
+      - alert: MeshThroughputCollapse
+        expr: |
+          mesh:mode_throughput:rate1m / clamp_min(mesh:mode_throughput:rate15m, 0.001) < 0.5
+        for: 15s
+        labels: { severity: critical, origin: mesh, failure_mode: fm2 }
+        annotations:
+          summary: "{{ $labels.authority }} at {{ $value | printf \"%.0f%%\" }} of baseline in {{ $labels.cluster }}"
+          description: >-
+            Throughput, not error rate, is the honest measure. Measured FM2: the
+            flat mirror served 55 requests where 2700 were expected while
+            logging two errors. Federated should NOT trip this during a single
+            cluster loss -- if it does, our recommendation is wrong.
+
+      - alert: FederationMembershipDegraded
+        expr: mesh:federated_endpoints:available < 9
+        for: 30s
+        labels: { severity: warning, origin: mesh, failure_mode: fm2 }
+        annotations:
+          summary: "federated pool is {{ $value }} of 9, seen from {{ $labels.cluster }}"
+          description: >-
+            A member cluster's endpoints have left the federated service.
+            Expected during a cluster loss -- this is federation working -- but
+            nothing else tells you it happened.
+
+      - alert: FederationMembershipCritical
+        expr: mesh:federated_endpoints:available <= 3
+        for: 30s
+        labels: { severity: critical, origin: mesh, failure_mode: fm4 }
+        annotations:
+          summary: "federated pool down to {{ $value }} of 9, seen from {{ $labels.cluster }}"
+          description: >-
+            One region's worth of capacity left. Magnitude separates a region
+            event from a cluster event: FM2 takes the pool 9 to 6, FM4 takes it
+            9 to 3.
+
+      # up{job="federate-*"} is dr-prometheus's own scrape of each cluster, so it
+      # flips within one interval. The federated up{job="linkerd-proxy"} series
+      # would wait out Prometheus staleness -- about five minutes.
+      - alert: ClusterStoppedReporting
+        expr: up{job=~"federate-.*"} == 0
+        for: 30s
+        labels: { severity: critical, origin: mesh, failure_mode: fm2 }
+        annotations:
+          summary: "{{ $labels.job }} is not reporting"
+          description: >-
+            A cluster has stopped federating metrics. Also the alert that tells
+            you your observability stack was inside the blast radius.
+
+      - alert: FederationNotRecovered
+        expr: |
+          (count(up{job=~"federate-.*"} == 1) == 3)
+          and (min(mesh:federated_endpoints:available) < 9)
+        for: 5m
+        labels: { severity: critical, origin: mesh, failure_mode: fm2 }
+        annotations:
+          summary: "all clusters healthy but federated pool still incomplete"
+          description: >-
+            Every cluster is healthy again, but endpoints have not rejoined.
+            Links pin the target's API address at creation; if it changed, the
+            mirror controllers point at nothing and membership can never
+            recover. Re-link -- waiting will not fix it.
+
+  # ---------------------------------------------------------------------------
+  # FM3 -- zone brownout
+  # ---------------------------------------------------------------------------
+  - name: dr-zone
+    interval: 10s
+    rules:
+      - alert: MeshLatencyDegraded
+        expr: |
+          mesh:mode_latency_p95:rate1m > 3 * clamp_min(mesh:mode_latency_p95:rate30m, 1)
+        for: 1m
+        labels: { severity: warning, origin: mesh, failure_mode: fm3 }
+        annotations:
+          summary: "{{ $labels.authority }} p95 is {{ $value | printf \"%.0f\" }}ms in {{ $labels.cluster }}"
+          description: >-
+            Three times the half-hour baseline. Nothing has failed and
+            Kubernetes will not alert: a zone that is slow but healthy is still,
+            to topology-aware routing, the right place to send traffic.
+
+      # The band scales with the active pool (measured 0.80x and 2.00x active)
+      # and moves UP the instant HAZL expands, so comparing against its CURRENT
+      # value can never fire. It only moves up, so the trailing minimum is the
+      # band in force when the fault began. Recorded FM3: peak 6.449 against a
+      # pre-expansion band high of 6.00 -- fires. Against 8.00 it would not.
+      # BEL only.
+      - alert: HAZLLoadAboveBand
+        expr: |
+          outbound_http_balancer_adaptive_load_average
+          > min_over_time(outbound_http_balancer_adaptive_load_band_high[5m])
+        for: 0s
+        labels: { severity: warning, origin: mesh, failure_mode: fm3 }
+        annotations:
+          summary: "HAZL load {{ $value | printf \"%.2f\" }} above the band it started from"
+          description: >-
+            Load crossed the high band and HAZL is about to widen the pool.
+            `for: 0s` is deliberate -- HAZL damps this itself, so any
+            prudent-looking pending window misses it entirely.
+
+      - alert: HAZLExpandedPool
+        expr: |
+          outbound_http_balancer_endpoints{endpoint_state="ready", parent_name="app-federated"}
+          > min_over_time(outbound_http_balancer_endpoints{endpoint_state="ready", parent_name="app-federated"}[30m])
+        for: 30s
+        labels: { severity: warning, origin: mesh, failure_mode: fm3 }
+        annotations:
+          summary: "HAZL widened the active pool to {{ $value }} in {{ $labels.cluster }}"
+          description: >-
+            Self-baselining against the trailing half hour, so it needs no
+            hardcoded resting size. Measured FM3: 3 active at rest, 4 during the
+            brownout.
+
+      # Self-disabling on OSS, where zone-agnostic spreading makes remote
+      # traffic the resting state -- this fired continuously the first time it
+      # was loaded. The second clause requires an enterprise-only metric.
+      #
+      # SCOPED TO THE APPLICATION AUTHORITIES, and that is not tidiness.
+      #
+      # Unscoped, this matched ALL outbound traffic -- including west's
+      # federating Prometheus scraping the other two clusters. That is remote
+      # by construction and never stops, so the alert fired at rest, forever,
+      # on a BEL rig with perfect zone locality. Measured before injection:
+      #
+      #   prometheus          remote  0.1 rps
+      #   prometheus-central  remote  0.1 rps
+      #   prometheus-east     remote  0.1 rps
+      #   app-federated  local   87 rps      <- all app traffic local
+      #
+      # An alert that is already firing cannot report the event it exists for.
+      # FM3's whole claim is that a brownout pushes APPLICATION traffic
+      # cross-zone; the monitoring stack's own scrapes are not that, and their
+      # 0.3 rps was drowning the signal. `verify:dashboard` caught it as
+      # "already firing before injection", which is exactly what that check is
+      # for.
+      #
+      # Same authority selector as the mesh:mode_throughput recording rules, so
+      # scope stays consistent across the file.
+      - alert: CrossZoneTrafficAppeared
+        expr: |
+          (sum by (cluster) (rate(response_total{direction="outbound",
+            authority=~"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\..*",
+            dst_zone_locality="remote"}[1m])) > 0)
+          and on (cluster) (max by (cluster) (outbound_http_balancer_adaptive_endpoints) > 0)
+        for: 30s
+        labels: { severity: warning, origin: mesh, failure_mode: fm3 }
+        annotations:
+          summary: "cross-zone traffic from {{ $labels.cluster }}"
+          description: >-
+            A reliability signal and a cost signal at once -- this is cross-AZ
+            egress you are now paying for. Measured FM3: 1260 requests, 46% of
+            traffic, went remote.
+
+  # ---------------------------------------------------------------------------
+  # Gateways
+  # ---------------------------------------------------------------------------
+  - name: dr-gateway
+    interval: 10s
+    rules:
+      # gateway_alive is 0 for every link WITHOUT a gateway -- measured, the two
+      # remote-discovery links read 0 permanently. Alerting on `== 0` alone
+      # means a permanently red alert per flat link. gateway_enabled gates it.
+      - alert: GatewayUnreachable
+        expr: (gateway_alive == 0) and on (target_cluster_name) (gateway_enabled == 1)
+        for: 30s
+        labels: { severity: critical, origin: mesh, failure_mode: fm2 }
+        annotations:
+          summary: "gateway for {{ $labels.target_cluster_name }} is not answering probes"
+          description: >-
+            Probes to this cluster's gateway are failing. Every gateway-mirrored
+            service pointed at it is affected -- and unlike a flat mirror the
+            failure is loud, because the gateway answers 5xx rather than hanging.
+
+      # Baseline here is 1.7ms, so 250ms is ~145x resting and still well under a
+      # probe timeout. Catch rising latency BEFORE it crosses the timeout and
+      # flips gateway_alive to 0 -- the failure in linkerd/linkerd2#8590.
+      - alert: GatewayProbeLatencyHigh
+        expr: |
+          histogram_quantile(0.95, sum by (target_cluster_name, le) (rate(gateway_probe_latency_ms_bucket[5m]))) > 250
+        for: 1m
+        labels: { severity: warning, origin: mesh, failure_mode: fm3 }
+        annotations:
+          summary: "gateway probe p95 to {{ $labels.target_cluster_name }} is {{ $value | printf \"%.0f\" }}ms"
+          description: >-
+            Probe latency is climbing. If it crosses the probe timeout the
+            gateway is marked dead and traffic stops, even though nothing about
+            it failed. Verify probe timeouts against real inter-cluster latency.
+
+  # ---------------------------------------------------------------------------
+  # Cross-cutting
+  # ---------------------------------------------------------------------------
+  - name: dr-security
+    interval: 10s
+    rules:
+      # If only one alert here survives, make it this one. After east recovered,
+      # all ten of its workload pods came back Running, 1/1, passing health
+      # checks, serving cross-cluster traffic in plaintext -- and the only
+      # visible signal anywhere was the container count going 2/2 -> 1/1.
+      - alert: NonMTLSTrafficDetected
+        expr: |
+          sum by (cluster, authority) (rate(response_total{direction="outbound", tls!="true",
+            authority=~"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\..*"}[1m])) > 0
+        for: 30s
+        labels: { severity: critical, origin: mesh, failure_mode: cross }
+        annotations:
+          summary: "plaintext traffic to {{ $labels.authority }} from {{ $labels.cluster }}"
+          description: >-
+            Cross-cluster requests are not over mTLS. Either failover broke
+            identity, or workloads came back unmeshed after a restart -- run
+            verify/meshed.sh. Authorization policies are enforced by the proxy,
+            so an unmeshed pod enforces nothing.

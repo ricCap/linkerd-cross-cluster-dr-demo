@@ -1,0 +1,2894 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "12.1.1"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "text",
+      "name": "Text",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "${DS_PROMETHEUS}",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "This dashboard centers on Linkerd Enterprise's High-Availability Zone Load Balancing (HAZL) feature, clearly visualizing cross-AZ traffic volume in GB/s and translating encrypted request rates per pod and per zone into annual cost estimates, highlighting how HAZL maintains reliability while minimizing cross-AZ delivery costs.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": false,
+      "tags": [
+        "buoyant",
+        "linkerd",
+        "hazl"
+      ],
+      "targetBlank": false,
+      "title": "Dashboards",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
+  "panels": [
+    {
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 218,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<div style=\"display: flex; align-items: center\">\n  <img src=\"https://buoyant.cloud/dist/favicon.ico\" style=\"height:32px;\"/>&nbsp;\n  <p style=\"font-size: 32px\">Buoyant Enterprise for Linkerd HAZL Dashboard</p> \n</div>",
+        "mode": "html"
+      },
+      "pluginVersion": "12.1.1",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 2
+      },
+      "id": 225,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "This dashboard visualizes High Availability Zonal Load Balancing in Buoyant Enterprise for Linkerd giving insight into how HTTP traffic is balanced across zones.  \nFor more information, see the [Buoyant Enterprise Linkerd documentation](https://docs.buoyant.io/buoyant-enterprise-linkerd/latest/features/hazl/).\n",
+        "mode": "markdown"
+      },
+      "pluginVersion": "12.1.1",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 213,
+      "panels": [],
+      "title": "Overview",
+      "type": "row"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Total outbound TCP traffic (bytes/sec) from client Deployment and StatefulSets to destination workloads, summed across pods and zones.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "transparent",
+            "mode": "fixed"
+          },
+          "decimals": 2,
+          "fieldMinMax": false,
+          "mappings": [],
+          "noValue": "No Traffic",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "id": 209,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "expr": "sum (\n  rate(tcp_write_bytes_total{direction=\"outbound\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\"}[$__rate_interval])\n  +\n  rate(tcp_write_bytes_total{direction=\"outbound\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\"}[$__rate_interval])\n  +\n  rate(tcp_read_bytes_total{direction=\"outbound\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\"}[$__rate_interval])\n  +\n  rate(tcp_read_bytes_total{direction=\"outbound\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\"}[$__rate_interval])\n)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Current Traffic",
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Total outbound encrypted TCP traffic (bytes/sec) from client deployment to destination workloads, summed across pods and zones.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "transparent",
+            "mode": "fixed"
+          },
+          "decimals": 2,
+          "fieldMinMax": false,
+          "mappings": [],
+          "noValue": "No Traffic",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "id": 204,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "expr": "sum (\n  rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\"}[$__rate_interval])\n  +\n  rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\"}[$__rate_interval])\n  +\n  rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\"}[$__rate_interval])\n  +\n  rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\"}[$__rate_interval])\n)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Current Meshed Traffic",
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Cross-zone outbound encrypted TCP traffic (bytes/sec) from client deployment to destination workloads.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "purple",
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "fieldMinMax": false,
+          "mappings": [],
+          "noValue": "No Traffic",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 0,
+        "y": 9
+      },
+      "id": 208,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "expr": "sum (\n  sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n  (\n    (\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n    +\n    (\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n  )\n  * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n  (\n    max by (namespace, pod, topology_kubernetes_io_zone) (\n      container_memory_working_set_bytes{namespace=~\"$client_namespace\", container=\"linkerd-proxy\"}\n    ) * 0 + 1\n  )\n  unless ignoring(matching_zone)\n  (\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"topology_kubernetes_io_zone\",\"(.*)\"\n    )\n    ==\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) \n        ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"dst_zone\",\"(.*)\"\n    )\n  )\n)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Cross-AZ Traffic",
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Same-zone outbound encrypted TCP traffic (bytes/sec) from client deployment to destination workloads.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "purple",
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "fieldMinMax": false,
+          "mappings": [],
+          "noValue": "No Traffic",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 9
+      },
+      "id": 206,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "expr": "sum (\n  sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n  (\n    (\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n    +\n    (\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n  )\n  * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n  (\n    max by (namespace, pod, topology_kubernetes_io_zone) (\n      container_memory_working_set_bytes{namespace=~\"$client_namespace\", container=\"linkerd-proxy\"}\n    ) * 0 + 1\n  )\n  and ignoring(matching_zone)\n  (\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"topology_kubernetes_io_zone\",\"(.*)\"\n    )\n    ==\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) \n        ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"dst_zone\",\"(.*)\"\n    )\n  )\n)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Same-AZ Traffic",
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "purple",
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "fieldMinMax": false,
+          "mappings": [],
+          "noValue": "No Traffic",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 14
+      },
+      "id": 207,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "expr": "sum (\n  sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n  (\n    (\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n    +\n    (\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n  )\n  * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n  (\n    max by (namespace, pod, topology_kubernetes_io_zone) (\n      container_memory_working_set_bytes{namespace=~\"$client_namespace\", container=\"linkerd-proxy\"}\n    ) * 0 + 1\n  )\n  unless ignoring(matching_zone)\n  (\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"topology_kubernetes_io_zone\",\"(.*)\"\n    )\n    ==\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) \n        ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"dst_zone\",\"(.*)\"\n    )\n  )\n)\n# Bytes → GiB \n / 1024 / 1024 / 1024\n# Cost per GiB \n * $traffic_cost\n# Seconds per year \n * 31536000\n",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Cross-AZ Yearly Traffic Cost ($)",
+      "transformations": [
+        {
+          "disabled": true,
+          "id": "calculateField",
+          "options": {
+            "alias": "Byte to GB Conversion",
+            "binary": {
+              "left": "sum (   sum(     rate(       outbound_tcp_write_bytes_total{         cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"       }[$__rate_interval]     )     +     rate(       outbound_tcp_read_bytes_total{         cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"       }[$__rate_interval]     )   ) by (namespace, workload_name, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)   * on (pod) group_left (topology_kubernetes_io_zone)   (     sum(       container_memory_working_set_bytes{cluster_name=\"$cluster_name\", container=\"linkerd-proxy\"}     ) by (pod, topology_kubernetes_io_zone)     * 0 + 1   )   unless ignoring(matching_zone)   (     label_replace(       sum(         rate(           outbound_tcp_write_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )         +         rate(           outbound_tcp_read_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )       ) by (namespace, workload_name, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)       * on (pod) group_left (topology_kubernetes_io_zone)       (         sum(           container_memory_working_set_bytes{cluster_name=\"$cluster_name\", container=\"linkerd-proxy\"}         ) by (pod, topology_kubernetes_io_zone)         * 0 + 1       ),       \"matching_zone\",       \"$1\",       \"topology_kubernetes_io_zone\",       \"(.*)\"     )     ==     label_replace(       sum(         rate(           outbound_tcp_write_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )         +         rate(           outbound_tcp_read_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )       ) by (namespace, workload_name, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)       * on (pod) group_left (topology_kubernetes_io_zone)       (         sum(           container_memory_working_set_bytes{cluster_name=\"$cluster_name\", container=\"linkerd-proxy\"}         ) by (pod, topology_kubernetes_io_zone)         * 0 + 1       ),       \"matching_zone\",       \"$1\",       \"dst_zone\",       \"(.*)\"     )   ) )",
+              "operator": "/",
+              "right": "0.000001024"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        },
+        {
+          "disabled": true,
+          "id": "calculateField",
+          "options": {
+            "alias": "GB to $$",
+            "binary": {
+              "left": "Byte to GB Conversion",
+              "operator": "*",
+              "right": "${traffic_cost}"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        },
+        {
+          "disabled": true,
+          "id": "calculateField",
+          "options": {
+            "alias": "Yearly Cost",
+            "binary": {
+              "left": "GB to $$",
+              "operator": "*",
+              "right": "31536000"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "purple",
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "fieldMinMax": false,
+          "mappings": [],
+          "noValue": "No Traffic",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 14
+      },
+      "id": 210,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "expr": "sum (\n  sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n  (\n    (\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n    +\n    (\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n  )\n  * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n  (\n    max by (namespace, pod, topology_kubernetes_io_zone) (\n      container_memory_working_set_bytes{namespace=~\"$client_namespace\", container=\"linkerd-proxy\"}\n    ) * 0 + 1\n  )\n  unless ignoring(matching_zone)\n  (\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"topology_kubernetes_io_zone\",\"(.*)\"\n    )\n    ==\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) \n        ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"dst_zone\",\"(.*)\"\n    )\n  )\n)\n# Bytes → GiB \n / 1024 / 1024 / 1024\n# Cost per GiB \n * $traffic_cost\n# Seconds per month \n * 2628000\n",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Cross-AZ Monthly Traffic Cost ($)",
+      "transformations": [
+        {
+          "disabled": true,
+          "id": "calculateField",
+          "options": {
+            "alias": "Byte to GB Conversion",
+            "binary": {
+              "left": "sum (   sum(     rate(       outbound_tcp_write_bytes_total{         cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"       }[$__rate_interval]     )     +     rate(       outbound_tcp_read_bytes_total{         cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"       }[$__rate_interval]     )   ) by (namespace, workload_name, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)   * on (pod) group_left (topology_kubernetes_io_zone)   (     sum(       container_memory_working_set_bytes{cluster_name=\"$cluster_name\", container=\"linkerd-proxy\"}     ) by (pod, topology_kubernetes_io_zone)     * 0 + 1   )   unless ignoring(matching_zone)   (     label_replace(       sum(         rate(           outbound_tcp_write_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )         +         rate(           outbound_tcp_read_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )       ) by (namespace, workload_name, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)       * on (pod) group_left (topology_kubernetes_io_zone)       (         sum(           container_memory_working_set_bytes{cluster_name=\"$cluster_name\", container=\"linkerd-proxy\"}         ) by (pod, topology_kubernetes_io_zone)         * 0 + 1       ),       \"matching_zone\",       \"$1\",       \"topology_kubernetes_io_zone\",       \"(.*)\"     )     ==     label_replace(       sum(         rate(           outbound_tcp_write_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )         +         rate(           outbound_tcp_read_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )       ) by (namespace, workload_name, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)       * on (pod) group_left (topology_kubernetes_io_zone)       (         sum(           container_memory_working_set_bytes{cluster_name=\"$cluster_name\", container=\"linkerd-proxy\"}         ) by (pod, topology_kubernetes_io_zone)         * 0 + 1       ),       \"matching_zone\",       \"$1\",       \"dst_zone\",       \"(.*)\"     )   ) )",
+              "operator": "/",
+              "right": "0.000001024"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        },
+        {
+          "disabled": true,
+          "id": "calculateField",
+          "options": {
+            "alias": "GB to $$",
+            "binary": {
+              "left": "Byte to GB Conversion",
+              "operator": "*",
+              "right": "${traffic_cost}"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        },
+        {
+          "disabled": true,
+          "id": "calculateField",
+          "options": {
+            "alias": "Yearly Cost",
+            "binary": {
+              "left": "GB to $$",
+              "operator": "*",
+              "right": "31536000"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "purple",
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "fieldMinMax": false,
+          "mappings": [],
+          "noValue": "No Traffic",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 14
+      },
+      "id": 205,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "expr": "sum (\n  sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n  (\n    (\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n    +\n    (\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n  )\n  * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n  (\n    max by (namespace, pod, topology_kubernetes_io_zone) (\n      container_memory_working_set_bytes{namespace=~\"$client_namespace\", container=\"linkerd-proxy\"}\n    ) * 0 + 1\n  )\n  and ignoring(matching_zone)\n  (\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"topology_kubernetes_io_zone\",\"(.*)\"\n    )\n    ==\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) \n        ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"dst_zone\",\"(.*)\"\n    )\n  )\n)\n# Bytes → GiB \n / 1024 / 1024 / 1024\n# Cost per GiB \n * $traffic_cost\n# Seconds per year \n * 31536000",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Cross-AZ Yearly Savings ($)",
+      "transformations": [
+        {
+          "disabled": true,
+          "id": "calculateField",
+          "options": {
+            "alias": "Byte to GB Conversion",
+            "binary": {
+              "left": "sum (   sum(     rate(       outbound_tcp_write_bytes_total{         cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"       }[$__rate_interval]     )     +     rate(       outbound_tcp_read_bytes_total{         cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"       }[$__rate_interval]     )   ) by (namespace, workload_name, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)   * on (pod) group_left (topology_kubernetes_io_zone)   (     sum(       container_memory_working_set_bytes{cluster_name=\"$cluster_name\", container=\"linkerd-proxy\"}     ) by (pod, topology_kubernetes_io_zone)     * 0 + 1   )   unless ignoring(matching_zone)   (     label_replace(       sum(         rate(           outbound_tcp_write_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )         +         rate(           outbound_tcp_read_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )       ) by (namespace, workload_name, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)       * on (pod) group_left (topology_kubernetes_io_zone)       (         sum(           container_memory_working_set_bytes{cluster_name=\"$cluster_name\", container=\"linkerd-proxy\"}         ) by (pod, topology_kubernetes_io_zone)         * 0 + 1       ),       \"matching_zone\",       \"$1\",       \"topology_kubernetes_io_zone\",       \"(.*)\"     )     ==     label_replace(       sum(         rate(           outbound_tcp_write_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )         +         rate(           outbound_tcp_read_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )       ) by (namespace, workload_name, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)       * on (pod) group_left (topology_kubernetes_io_zone)       (         sum(           container_memory_working_set_bytes{cluster_name=\"$cluster_name\", container=\"linkerd-proxy\"}         ) by (pod, topology_kubernetes_io_zone)         * 0 + 1       ),       \"matching_zone\",       \"$1\",       \"dst_zone\",       \"(.*)\"     )   ) )",
+              "operator": "/",
+              "right": "0.000001024"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        },
+        {
+          "disabled": true,
+          "id": "calculateField",
+          "options": {
+            "alias": "GB to $$",
+            "binary": {
+              "left": "Byte to GB Conversion",
+              "operator": "*",
+              "right": "${traffic_cost}"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        },
+        {
+          "disabled": true,
+          "id": "calculateField",
+          "options": {
+            "alias": "Yearly Cost",
+            "binary": {
+              "left": "GB to $$",
+              "operator": "*",
+              "right": "31536000"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "purple",
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "fieldMinMax": false,
+          "mappings": [],
+          "noValue": "No Traffic",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 14
+      },
+      "id": 211,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "expr": "sum (\n  sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n  (\n    (\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n    +\n    (\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n  )\n  * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n  (\n    max by (namespace, pod, topology_kubernetes_io_zone) (\n      container_memory_working_set_bytes{namespace=~\"$client_namespace\", container=\"linkerd-proxy\"}\n    ) * 0 + 1\n  )\n  and ignoring(matching_zone)\n  (\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"topology_kubernetes_io_zone\",\"(.*)\"\n    )\n    ==\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) \n        ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"dst_zone\",\"(.*)\"\n    )\n  )\n)\n# Bytes → GiB \n / 1024 / 1024 / 1024\n# Cost per GiB \n * $traffic_cost\n# Seconds per year \n * 2628000",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Cross-AZ Monthly Savings ($)",
+      "transformations": [
+        {
+          "disabled": true,
+          "id": "calculateField",
+          "options": {
+            "alias": "Byte to GB Conversion",
+            "binary": {
+              "left": "sum (   sum(     rate(       outbound_tcp_write_bytes_total{         cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"       }[$__rate_interval]     )     +     rate(       outbound_tcp_read_bytes_total{         cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"       }[$__rate_interval]     )   ) by (namespace, workload_name, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)   * on (pod) group_left (topology_kubernetes_io_zone)   (     sum(       container_memory_working_set_bytes{cluster_name=\"$cluster_name\", container=\"linkerd-proxy\"}     ) by (pod, topology_kubernetes_io_zone)     * 0 + 1   )   unless ignoring(matching_zone)   (     label_replace(       sum(         rate(           outbound_tcp_write_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )         +         rate(           outbound_tcp_read_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )       ) by (namespace, workload_name, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)       * on (pod) group_left (topology_kubernetes_io_zone)       (         sum(           container_memory_working_set_bytes{cluster_name=\"$cluster_name\", container=\"linkerd-proxy\"}         ) by (pod, topology_kubernetes_io_zone)         * 0 + 1       ),       \"matching_zone\",       \"$1\",       \"topology_kubernetes_io_zone\",       \"(.*)\"     )     ==     label_replace(       sum(         rate(           outbound_tcp_write_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )         +         rate(           outbound_tcp_read_bytes_total{             cluster_name=\"$cluster_name\", tls=\"true\", namespace=~\"$client_namespace\", workload_name!=\"buoyant-cloud-metrics\",peer=\"dst\", dst_zone!=\"\"           }[$__rate_interval]         )       ) by (namespace, workload_name, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)       * on (pod) group_left (topology_kubernetes_io_zone)       (         sum(           container_memory_working_set_bytes{cluster_name=\"$cluster_name\", container=\"linkerd-proxy\"}         ) by (pod, topology_kubernetes_io_zone)         * 0 + 1       ),       \"matching_zone\",       \"$1\",       \"dst_zone\",       \"(.*)\"     )   ) )",
+              "operator": "/",
+              "right": "0.000001024"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        },
+        {
+          "disabled": true,
+          "id": "calculateField",
+          "options": {
+            "alias": "GB to $$",
+            "binary": {
+              "left": "Byte to GB Conversion",
+              "operator": "*",
+              "right": "${traffic_cost}"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        },
+        {
+          "disabled": true,
+          "id": "calculateField",
+          "options": {
+            "alias": "Yearly Cost",
+            "binary": {
+              "left": "GB to $$",
+              "operator": "*",
+              "right": "31536000"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "id": 212,
+      "panels": [],
+      "title": "Traffic",
+      "type": "row"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Displays encrypted outbound traffic per pod, split into same-zone vs. cross-zone flows, to highlight cost impact and traffic distribution.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "semi-dark-red",
+            "mode": "continuous-RdYlGr"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Same-AZ"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cross-AZ"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 181,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum (\n  sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n  (\n    (\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n    +\n    (\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n  )\n  * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n  (\n    max by (namespace, pod, topology_kubernetes_io_zone) (\n      container_memory_working_set_bytes{namespace=~\"$client_namespace\", container=\"linkerd-proxy\"}\n    ) * 0 + 1\n  )\n  unless ignoring(matching_zone)\n  (\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"topology_kubernetes_io_zone\",\"(.*)\"\n    )\n    ==\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) \n        ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"dst_zone\",\"(.*)\"\n    )\n  )\n)",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "Cross-AZ",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "expr": "sum (\n  sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n  (\n    (\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n    +\n    (\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n  )\n  * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n  (\n    max by (namespace, pod, topology_kubernetes_io_zone) (\n      container_memory_working_set_bytes{namespace=~\"$client_namespace\", container=\"linkerd-proxy\"}\n    ) * 0 + 1\n  )\n  and ignoring(matching_zone)\n  (\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"topology_kubernetes_io_zone\",\"(.*)\"\n    )\n    ==\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) \n        ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"dst_zone\",\"(.*)\"\n    )\n  )\n)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Same-AZ",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Traffic Overview",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Shows cross-zone encrypted outbound traffic aggregated by destination namespace and deployment, highlighting inter-zone communication costs.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "binBps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      },
+      "id": 180,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum (\n  sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n  (\n    (\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n    +\n    (\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n  )\n  * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n  (\n    max by (namespace, pod, topology_kubernetes_io_zone) (\n      container_memory_working_set_bytes{namespace=~\"$client_namespace\", container=\"linkerd-proxy\"}\n    ) * 0 + 1\n  )\n  unless ignoring(matching_zone)\n  (\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"topology_kubernetes_io_zone\",\"(.*)\"\n    )\n    ==\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) \n        ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"dst_zone\",\"(.*)\"\n    )\n  )\n) by (dst_namespace, dst_deployment)\n",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "{{dst_deployment}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Cross-AZ Traffic: By Destination",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Shows same-zone encrypted outbound traffic aggregated by destination namespace and deployment, highlighting inter-zone communication costs.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "binBps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 30
+      },
+      "id": 188,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum (\n  sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n  (\n    (\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n    +\n    (\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n  )\n  * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n  (\n    max by (namespace, pod, topology_kubernetes_io_zone) (\n      container_memory_working_set_bytes{namespace=~\"$client_namespace\", container=\"linkerd-proxy\"}\n    ) * 0 + 1\n  )\n  and ignoring(matching_zone)\n  (\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"topology_kubernetes_io_zone\",\"(.*)\"\n    )\n    ==\n    label_replace(\n      sum by (namespace, src_workload, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n      (\n        (\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n        +\n        (\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n          )\n          or\n          label_replace(\n            rate(tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]),\n            \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n          )\n        )\n      )\n      * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      ( \n        max by (namespace, pod, topology_kubernetes_io_zone) \n        ( \n          container_memory_working_set_bytes{ namespace=~\"$client_namespace\", container=\"linkerd-proxy\" } \n        ) * 0 + 1 \n      ),\n      \"matching_zone\",\"$1\",\"dst_zone\",\"(.*)\"\n    )\n  )\n) by (dst_namespace, dst_deployment)\n",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "{{dst_deployment}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Same-AZ Traffic: By Destination",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pod"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 813
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
+      "id": 221,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(container_memory_working_set_bytes{container=\"linkerd-proxy\"}) by (pod, topology_kubernetes_io_zone)",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Meshed Pods by Zone",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true
+            },
+            "indexByName": {},
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 47
+      },
+      "id": 214,
+      "panels": [],
+      "title": "Linkerd",
+      "type": "row"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Displays inbound success rate by comparing successful responses to total inbound responses for the selected namespace.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "rgb(31, 120, 193)",
+            "mode": "fixed"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#d44a3a",
+                "value": 0
+              },
+              {
+                "color": "rgba(237, 129, 40, 0.89)",
+                "value": 0.9
+              },
+              {
+                "color": "#299c46",
+                "value": 0.99
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 0,
+        "y": 48
+      },
+      "id": 215,
+      "maxDataPoints": 100,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "expr": "sum(\n  irate(response_total{classification=\"success\", namespace=~\"$client_namespace\", direction=\"inbound\"}[$__rate_interval])) / \n  sum(irate(response_total{namespace=~\"$client_namespace\", direction=\"inbound\"}[$__rate_interval])\n)",
+          "format": "time_series",
+          "instant": false,
+          "intervalFactor": 1,
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Success Rate",
+      "transparent": true,
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Shows total inbound request rate for the selected namespace over time.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "rgb(31, 120, 193)",
+            "mode": "fixed"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 8,
+        "y": 48
+      },
+      "id": 216,
+      "maxDataPoints": 100,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "expr": "sum(\n  irate(request_total{namespace=~\"$client_namespace\", direction=\"inbound\"}[$__rate_interval])\n)",
+          "format": "time_series",
+          "instant": false,
+          "intervalFactor": 1,
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Request Rate",
+      "transparent": true,
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Shows 95th percentile outbound response latency (ms) for the selected deployment and namespace.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "rgb(31, 120, 193)",
+            "mode": "fixed"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 16,
+        "y": 48
+      },
+      "id": 217,
+      "maxDataPoints": 100,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "expr": "sum(\n  histogram_quantile(\n    0.95,\n    sum(\n      label_replace(\n        rate(response_latency_ms_bucket{\n            direction=\"outbound\",\n            namespace=~\"$client_namespace\",\n            deployment=~\"$client_workload\"\n        }[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or\n      label_replace(\n        rate(response_latency_ms_bucket{\n          direction=\"outbound\",\n          namespace=~\"$client_namespace\",\n          statefulset=~\"$client_workload\"\n        }[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    )\n    by (le, namespace, src_workload)\n  )\n)",
+          "format": "time_series",
+          "instant": false,
+          "intervalFactor": 1,
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Latency (P95)",
+      "transparent": true,
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Shows outbound success rate per deployment by comparing successful responses to all outbound responses.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 8,
+        "x": 0,
+        "y": 51
+      },
+      "id": 187,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "(\n  sum(\n    label_replace(\n      rate(response_total{\n        direction=\"outbound\",\n        classification=\"success\",\n        namespace=~\"$client_namespace\",\n        deployment=~\"$client_workload\"\n      }[$__rate_interval]),\n      \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n    )\n    or ignoring(deployment, statefulset)\n    label_replace(\n      rate(response_total{\n        direction=\"outbound\",\n        classification=\"success\",\n        namespace=~\"$client_namespace\",\n        statefulset=~\"$client_workload\"\n      }[$__rate_interval]),\n      \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n    )\n  ) by (namespace, src_workload)\n)\n/\n(\n  sum(\n    label_replace(\n      rate(response_total{\n        direction=\"outbound\",\n        namespace=~\"$client_namespace\",\n        deployment=~\"$client_workload\"\n      }[$__rate_interval]),\n      \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n    )\n    or ignoring(deployment, statefulset)\n    label_replace(\n      rate(response_total{\n        direction=\"outbound\",\n        namespace=~\"$client_namespace\",\n        statefulset=~\"$client_workload\"\n      }[$__rate_interval]),\n      \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n    )\n  ) by (namespace, src_workload)\n)",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Success Rate: By Zone",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Shows outbound request rate per deployment where TLS is not used (excluding loopback).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 8,
+        "x": 8,
+        "y": 51
+      },
+      "id": 192,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(\n  (\n    label_replace(\n      rate(response_total{\n        direction=\"outbound\",\n        no_tls_reason!=\"loopback\",\n        namespace=~\"$client_namespace\",\n        deployment=~\"$client_workload\"\n      }[$__rate_interval]),\n      \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n    )\n    or ignoring(deployment, statefulset)\n    label_replace(\n      rate(response_total{\n        direction=\"outbound\",\n        no_tls_reason!=\"loopback\",\n        namespace=~\"$client_namespace\",\n        statefulset=~\"$client_workload\"\n      }[$__rate_interval]),\n      \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n    )\n  )\n)",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "Overall Requests",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Overall Requests",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Shows 95th percentile outbound response latency (ms) per deployment.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 8,
+        "x": 16,
+        "y": 51
+      },
+      "id": 186,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum by (src_workload) (\n  histogram_quantile(\n    0.95,\n    sum(\n      label_replace(\n        rate(response_latency_ms_bucket{\n          direction=\"outbound\",\n          namespace=~\"$client_namespace\",\n          deployment=~\"$client_workload\"\n        }[$__rate_interval]),\n        \"src_workload\",\"deploy/$1\",\"deployment\",\"(.*)\"\n      )\n      or ignoring(deployment, statefulset)\n      label_replace(\n        rate(response_latency_ms_bucket{\n          direction=\"outbound\",\n          namespace=~\"$client_namespace\",\n          statefulset=~\"$client_workload\"\n        }[$__rate_interval]),\n        \"src_workload\",\"sts/$1\",\"statefulset\",\"(.*)\"\n      )\n    ) by (le, namespace, src_workload)\n  )\n)\n",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Latency: By Zone (ms)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Shows the adaptive load balancing average value for outbound HTTP traffic in the selected namespace.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 62
+      },
+      "id": 194,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "outbound_http_balancer_adaptive_load_average{namespace=~\"$client_namespace\"}",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "{{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Load Average",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Displays the count of outbound HTTP Power-of-Two-Choices (P2C) load balancer endpoints, grouped by backend and deployment. (Only Active Endpoints)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pod"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 250
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "__name__"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 70
+      },
+      "id": 177,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(\n  outbound_http_balancer_p2c_endpoints{deployment=~\"$client_workload\", namespace=~\"$client_namespace\"}\n) by (backend_name, backend_namespace, backend_port, deployment, instance)",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP Power of Two Endpoints",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true
+            },
+            "indexByName": {},
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 78
+      },
+      "id": 227,
+      "panels": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Outbound mTLS TCP throughput from client Deployments pods (read+write bytes/s); only same-AZ connections (unknown zones excluded).",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "pod"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 222
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 79
+          },
+          "id": 224,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": false,
+                "displayName": "deployment"
+              }
+            ]
+          },
+          "pluginVersion": "12.1.1",
+          "targets": [
+            {
+              "datasource": "${DS_PROMETHEUS}",
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum(\n  rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]) +\n  rate(tcp_read_bytes_total{ direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval])\n)\nby (namespace, deployment, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n* on (namespace, pod) group_left(topology_kubernetes_io_zone)\n(\n  max by (namespace, pod, topology_kubernetes_io_zone) (\n    container_memory_working_set_bytes{\n      namespace=~\"$client_namespace\",\n      container=\"linkerd-proxy\"\n    }\n  ) * 0 + 1\n)\nunless ignoring(matching_zone)\n(\n  label_replace(\n    sum(\n      rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]) +\n      rate(tcp_read_bytes_total{ direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval])\n    )\n    by (namespace, deployment, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n    * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      (\n        max by (namespace, pod, topology_kubernetes_io_zone) (\n          container_memory_working_set_bytes{\n            namespace=~\"$client_namespace\",\n            container=\"linkerd-proxy\"\n          }\n        ) * 0 + 1\n      ),\n    \"matching_zone\",\"$1\",\"topology_kubernetes_io_zone\",\"(.*)\"\n  )\n  ==\n  label_replace(\n    sum(\n      rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]) +\n      rate(tcp_read_bytes_total{ direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval])\n    )\n    by (namespace, deployment, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone)\n    * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      (\n        max by (namespace, pod, topology_kubernetes_io_zone) (\n          container_memory_working_set_bytes{\n            namespace=~\"$client_namespace\",\n            container=\"linkerd-proxy\"\n          }\n        ) * 0 + 1\n      ),\n    \"matching_zone\",\"$1\",\"dst_zone\",\"(.*)\"\n  )\n)\n",
+              "format": "table",
+              "hide": false,
+              "instant": true,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "__auto",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "Cross-AZ traffic",
+          "type": "table"
+        },
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Outbound mTLS TCP throughput from client Deployments pods (read+write bytes/s); only same-AZ connections (unknown zones excluded).",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "pod"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 222
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 86
+          },
+          "id": 223,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": false,
+                "displayName": "dst_pod"
+              }
+            ]
+          },
+          "pluginVersion": "12.1.1",
+          "targets": [
+            {
+              "datasource": "${DS_PROMETHEUS}",
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum by (namespace, deployment, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone) \n(\n  rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]) +\n  rate(tcp_read_bytes_total{ direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval])\n)\n* on (namespace, pod) group_left(topology_kubernetes_io_zone)\n(\n  max by (namespace, pod, topology_kubernetes_io_zone) (\n    container_memory_working_set_bytes{namespace=~\"$client_namespace\",container=\"linkerd-proxy\"}\n  ) * 0 + 1\n)\nand ignoring(matching_zone)\n(\n  label_replace(\n    sum by (namespace, deployment, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone) (\n      rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]) +\n      rate(tcp_read_bytes_total{ direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval])\n    )\n    * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      (\n        max by (namespace, pod, topology_kubernetes_io_zone) (\n          container_memory_working_set_bytes{namespace=~\"$client_namespace\",container=\"linkerd-proxy\"}\n        ) * 0 + 1\n      ),\n    \"matching_zone\",\"$1\",\"topology_kubernetes_io_zone\",\"(.*)\"\n  )\n  ==\n  label_replace(\n    sum by (namespace, deployment, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone) (\n      rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]) +\n      rate(tcp_read_bytes_total{ direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval])\n    )\n    * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      (\n        max by (namespace, pod, topology_kubernetes_io_zone) (\n          container_memory_working_set_bytes{namespace=~\"$client_namespace\",container=\"linkerd-proxy\"}\n        ) * 0 + 1\n      ),\n    \"matching_zone\",\"$1\",\"dst_zone\",\"(.*)\"\n  )\n)\n",
+              "format": "table",
+              "hide": false,
+              "instant": true,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "__auto",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "Same-AZ traffic",
+          "type": "table"
+        },
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "dst_pod"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 206
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "pod"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 219
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 93
+          },
+          "id": 222,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": false,
+                "displayName": "dst_pod"
+              }
+            ]
+          },
+          "pluginVersion": "12.1.1",
+          "targets": [
+            {
+              "datasource": "${DS_PROMETHEUS}",
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "  rate(\n    tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"\n    }[$__rate_interval]\n  )\n  +\n  rate(\n    tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", deployment!=\"$client_workload\", peer=\"dst\", dst_zone!=\"\"\n    }[$__rate_interval]\n  )",
+              "format": "table",
+              "hide": false,
+              "instant": true,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "__auto",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "Raw outbound reads + writes",
+          "type": "table"
+        }
+      ],
+      "title": "Raw Data (Deployments)",
+      "type": "row"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 79
+      },
+      "id": 220,
+      "panels": [],
+      "title": "Raw Data (StatefulSet)",
+      "type": "row"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Outbound mTLS TCP throughput from client StatefulSet pods (read+write bytes/s); only cross-AZ connections (unknown zones excluded).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pod"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 222
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 80
+      },
+      "id": 229,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "deployment"
+          }
+        ]
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum by (namespace, statefulset, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone) \n(\n  rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]) +\n  rate(tcp_read_bytes_total{ direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval])\n)\n* on (namespace, pod) group_left(topology_kubernetes_io_zone)\n(\n  max by (namespace, pod, topology_kubernetes_io_zone) (\n    container_memory_working_set_bytes{namespace=~\"$client_namespace\",container=\"linkerd-proxy\"}\n  ) * 0 + 1\n)\nunless ignoring(matching_zone)\n(\n  label_replace(\n    sum by (namespace, statefulset, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone) (\n      rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]) +\n      rate(tcp_read_bytes_total{ direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval])\n    )\n    * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      (\n        max by (namespace, pod, topology_kubernetes_io_zone) (\n          container_memory_working_set_bytes{namespace=~\"$client_namespace\",container=\"linkerd-proxy\"}\n        ) * 0 + 1\n      ),\n    \"matching_zone\",\"$1\",\"topology_kubernetes_io_zone\",\"(.*)\"\n  )\n  ==\n  label_replace(\n    sum by (namespace, statefulset, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone) (\n      rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]) +\n      rate(tcp_read_bytes_total{ direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval])\n    )\n    * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      (\n        max by (namespace, pod, topology_kubernetes_io_zone) (\n          container_memory_working_set_bytes{namespace=~\"$client_namespace\",container=\"linkerd-proxy\"}\n        ) * 0 + 1\n      ),\n    \"matching_zone\",\"$1\",\"dst_zone\",\"(.*)\"\n  )\n)",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Cross-AZ traffic",
+      "type": "table"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Outbound mTLS TCP throughput from client StatefulSet pods (read+write bytes/s); only same-AZ connections (unknown zones excluded).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pod"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 222
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 87
+      },
+      "id": 226,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "dst_pod"
+          }
+        ]
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum by (namespace, statefulset, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone) \n(\n  rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]) +\n  rate(tcp_read_bytes_total{ direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval])\n)\n* on (namespace, pod) group_left(topology_kubernetes_io_zone)\n(\n  max by (namespace, pod, topology_kubernetes_io_zone) (\n    container_memory_working_set_bytes{namespace=~\"$client_namespace\",container=\"linkerd-proxy\"}\n  ) * 0 + 1\n)\nand ignoring(matching_zone)\n(\n  label_replace(\n    sum by (namespace, statefulset, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone) (\n      rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]) +\n      rate(tcp_read_bytes_total{ direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval])\n    )\n    * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      (\n        max by (namespace, pod, topology_kubernetes_io_zone) (\n          container_memory_working_set_bytes{namespace=~\"$client_namespace\",container=\"linkerd-proxy\"}\n        ) * 0 + 1\n      ),\n    \"matching_zone\",\"$1\",\"topology_kubernetes_io_zone\",\"(.*)\"\n  )\n  ==\n  label_replace(\n    sum by (namespace, statefulset, pod, instance, dst_namespace, dst_workload_name, dst_pod, dst_zone) (\n      rate(tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval]) +\n      rate(tcp_read_bytes_total{ direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"}[$__rate_interval])\n    )\n    * on (namespace, pod) group_left(topology_kubernetes_io_zone)\n      (\n        max by (namespace, pod, topology_kubernetes_io_zone) (\n          container_memory_working_set_bytes{namespace=~\"$client_namespace\",container=\"linkerd-proxy\"}\n        ) * 0 + 1\n      ),\n    \"matching_zone\",\"$1\",\"dst_zone\",\"(.*)\"\n  )\n)",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Same-AZ traffic",
+      "type": "table"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "dst_pod"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 206
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pod"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 219
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 94
+      },
+      "id": 228,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "dst_pod"
+          }
+        ]
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "  rate(\n    tcp_write_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"\n    }[$__rate_interval]\n  )\n  +\n  rate(\n    tcp_read_bytes_total{direction=\"outbound\", tls=\"true\", namespace=~\"$client_namespace\", statefulset=~\"$client_workload\", peer=\"dst\", dst_zone!=\"\"\n    }[$__rate_interval]\n  )",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Raw outbound reads + writes",
+      "type": "table"
+    },
+    {
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 102
+      },
+      "id": 219,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<div>\n  <div style=\"position: absolute; top: 0, left: 0\">\n    <a href=\"https://buoyant.cloud\" target=\"_blank\"><img src=\"https://buoyant.io/images/buoyant_logo.svg\" style=\"height: 30px;\"></a>\n  </div>\n</div>\n",
+        "mode": "html"
+      },
+      "pluginVersion": "12.1.1",
+      "transparent": true,
+      "type": "text"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 41,
+  "tags": [
+    "Linkerd",
+    "HAZL"
+  ],
+  "templating": {
+    "list": [
+      {
+        "allValue": ".*",
+        "current": {},
+        "datasource": "${DS_PROMETHEUS}",
+        "definition": "query_result(count by (src_workload) (label_replace(response_total{namespace=~\"$client_namespace\",deployment!=\"\"},\"src_workload\",\"$1\",\"deployment\",\"(.+)\") or label_replace(response_total{namespace=~\"$client_namespace\",statefulset!=\"\"},\"src_workload\",\"$1\",\"statefulset\",\"(.+)\")))",
+        "description": "Deployment or StatefulSet name",
+        "includeAll": true,
+        "label": "Client Workload(s)",
+        "multi": true,
+        "name": "client_workload",
+        "options": [],
+        "query": {
+          "qryType": 3,
+          "query": "query_result(count by (src_workload) (label_replace(response_total{namespace=~\"$client_namespace\",deployment!=\"\"},\"src_workload\",\"$1\",\"deployment\",\"(.+)\") or label_replace(response_total{namespace=~\"$client_namespace\",statefulset!=\"\"},\"src_workload\",\"$1\",\"statefulset\",\"(.+)\")))",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "/src_workload=\"([^\"]+)\"/",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {},
+        "datasource": "${DS_PROMETHEUS}",
+        "definition": "label_values(response_total,namespace)",
+        "includeAll": true,
+        "label": "Client Namespace(s)",
+        "multi": true,
+        "name": "client_namespace",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(response_total,namespace)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {},
+        "datasource": "${DS_PROMETHEUS}",
+        "definition": "query_result(count by (src_workload) (label_replace(response_total{namespace=~\"$client_namespace\",deployment!=\"\"},\"src_workload\",\"$1\",\"deployment\",\"(.+)\") or label_replace(response_total{namespace=~\"$client_namespace\",statefulset!=\"\"},\"src_workload\",\"$1\",\"statefulset\",\"(.+)\")))",
+        "description": "Server Deployments or StatefulSets",
+        "includeAll": true,
+        "label": "Server Workload(s)",
+        "multi": true,
+        "name": "server_workload",
+        "options": [],
+        "query": {
+          "qryType": 3,
+          "query": "query_result(count by (src_workload) (label_replace(response_total{namespace=~\"$client_namespace\",deployment!=\"\"},\"src_workload\",\"$1\",\"deployment\",\"(.+)\") or label_replace(response_total{namespace=~\"$client_namespace\",statefulset!=\"\"},\"src_workload\",\"$1\",\"statefulset\",\"(.+)\")))",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "/src_workload=\"([^\"]+)\"/",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {},
+        "datasource": "${DS_PROMETHEUS}",
+        "definition": "label_values(response_total,namespace)",
+        "includeAll": true,
+        "label": "Server Namespace(s)",
+        "multi": true,
+        "name": "server_namespace",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(response_total,namespace)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "0.02",
+          "value": "0.02"
+        },
+        "includeAll": false,
+        "label": "Traffic Cost",
+        "name": "traffic_cost",
+        "options": [
+          {
+            "selected": true,
+            "text": "0.02",
+            "value": "0.02"
+          },
+          {
+            "selected": false,
+            "text": "0.03",
+            "value": "0.03"
+          },
+          {
+            "selected": false,
+            "text": "0.04",
+            "value": "0.04"
+          },
+          {
+            "selected": false,
+            "text": "0.05",
+            "value": "0.05"
+          }
+        ],
+        "query": "0.02,0.03,0.04,0.05",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-2h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Buoyant Enterprise for Linkerd HAZL Dashboard",
+  "uid": "linkerdenterprisehazldashboard",
+  "version": 2,
+  "weekStart": "",
+  "gnetId": 23979
+}

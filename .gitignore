@@ -1,0 +1,51 @@
+# Private keys. The trust anchor key in particular is the root of the entire
+# mesh's identity -- it must never be committed, even for a throwaway demo.
+certs/*.key
+certs/*.crt
+
+# Generated k3d cluster configs (source of truth is clusters/lib.sh)
+clusters/.generated/
+
+# Experiment output: captured metrics, baselines, charts.
+# FINDINGS.md is the write-up, not output -- keep it.
+#
+# Note `results/*` rather than `results/`: git does not descend into an excluded
+# directory, so a negation inside one can never match. Excluding the contents
+# instead leaves the directory walkable.
+results/*
+!results/FINDINGS.md
+!results/SHORTCOMINGS.md
+
+# Per-run write-ups are write-ups too, and the same reasoning that keeps
+# FINDINGS.md applies to them: they are prose about a run, not the run's output.
+# FINDINGS.md already cross-references `results/run-2026-08-17/SUMMARY.md`, and
+# under the rule above that file was never tracked -- a published document
+# pointing at something no clone contains.
+#
+# Three lines rather than one, for the reason the note above gives: git does not
+# descend into an excluded directory, so `!results/run-*/SUMMARY.md` alone can
+# never match. Re-admit the run directories, exclude their contents, then
+# re-admit the write-up.
+!results/run-*/
+results/run-*/*
+!results/run-*/SUMMARY.md
+
+# Sampler output. The page and the exporter are source; feeds are run artifacts,
+# same as results/ -- and live.ndjson grows for as long as a game day lasts.
+viz/data/
+
+# Archived Prometheus TSDBs. Hundreds of MB per run, and reconstructable from a
+# live rig -- see `task archive:save`. The numbers the write-up depends on live
+# in results/ as metric snapshots; this is only what makes the Grafana panels
+# replayable after the clusters are gone.
+prometheus-archive/
+
+# Local overrides (licenses, Buoyant Cloud credentials).
+# The glob matters: a bare `settings.local.sh` does not match editor backups or
+# copies like settings.local.sh.bak, which contain exactly the same secret.
+settings.local.sh*
+.env
+*.bak
+
+# macOS Finder metadata.
+.DS_Store

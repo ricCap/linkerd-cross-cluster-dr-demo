@@ -1,0 +1,340 @@
+version: '3'
+
+# Cross-cluster DR exercise environment.
+#
+#   task up          build everything from nothing
+#   task watch       live cross-cluster traffic view
+#   task down        tear it all down
+#
+# Every step is idempotent, so `task up` on a half-built environment finishes
+# the job rather than failing.
+
+env:
+  LINKERD_FLAVOR: '{{.LINKERD_FLAVOR | default "oss"}}'
+
+tasks:
+  default:
+    cmds:
+      - task: --list
+
+  # --- build ---------------------------------------------------------------
+
+  up:
+    desc: Build the whole environment (3 clusters, flat network, Linkerd, apps, load)
+    cmds:
+      - task: network
+      - task: clusters
+      - task: routes
+      - task: verify:network
+      - task: certs
+      - task: linkerd
+      - task: multicluster
+      - task: apps
+      - task: enforce
+      - task: verify:multicluster
+      - task: observability
+      - task: agent
+      - task: grafana
+      - task: expose
+      - task: load
+      - cmd: echo "\nEnvironment ready. 'task watch' for the live view."
+
+  network:
+    desc: Create the shared Docker network
+    cmd: bash clusters/00-network.sh
+
+  clusters:
+    desc: Create the three k3d clusters
+    cmd: bash clusters/01-create-clusters.sh
+
+  routes:
+    desc: Install the cross-cluster route mesh
+    cmd: bash clusters/02-routes.sh
+
+  certs:
+    desc: Generate trust anchor and per-cluster issuers
+    cmd: bash clusters/03-certs.sh
+
+  linkerd:
+    desc: Install Linkerd on all clusters
+    cmd: bash clusters/04-linkerd.sh
+
+  multicluster:
+    desc: Install multicluster extension and link the clusters
+    cmd: bash clusters/05-multicluster.sh
+
+  apps:
+    desc: Deploy the three cross-cluster exposure modes
+    cmd: bash clusters/06-apps.sh
+
+  observability:
+    desc: Install linkerd-viz and Chaos Mesh
+    cmd: bash clusters/07-observability.sh
+
+  agent:
+    # A BEL install from the Helm charts gets you the enterprise software and
+    # nothing else -- the license authenticates the chart pull, it does not
+    # enrol the cluster anywhere. Without this the clusters never appear at
+    # enterprise.buoyant.io, which is surprising because everything else about
+    # the install says "enterprise".
+    #
+    # Skipped with a loud explanation when the Buoyant Cloud credentials are
+    # absent, so `task up` still completes without an account. Never skipped
+    # silently: see the ENFORCE_MESH note on the `enforce` task for why that
+    # distinction is load-bearing here.
+    desc: "Register the clusters with Buoyant Cloud (BEL; needs cloud credentials)"
+    cmd: bash clusters/11-buoyant-agent.sh install
+
+  agent:status:
+    desc: Show the Buoyant Cloud agent state per cluster
+    cmd: bash clusters/11-buoyant-agent.sh status
+
+  grafana:
+    desc: Install Grafana + a Prometheus federating all three clusters
+    cmd: bash clusters/09-grafana.sh
+
+  expose:
+    # Grafana and the status page on stable host ports, WITHOUT kubectl
+    # port-forward.
+    #
+    # The forward tunnelled through west's API server over SPDY streams, and it
+    # flaked in the way that matters: it served for a while, then returned
+    # "error creating error stream ... Timeout occurred" while every pod stayed
+    # Running. FM4 *measures* dashboard availability as a check, so a flapping
+    # forward reads as "the observability stack died with the region" -- a false
+    # positive on the most interesting result in the experiment.
+    #
+    # A NodePort plus a relay container on dr-net takes the API server out of
+    # the path, so the check answers the question it is actually asking: is
+    # Grafana up?
+    desc: Expose Grafana (:50760) and the status page (:8731) on the host
+    cmd: bash clusters/12-expose.sh up
+
+  expose:status:
+    desc: Show whether Grafana and the status page are reachable from the host
+    cmd: bash clusters/12-expose.sh status
+
+  expose:down:
+    desc: Remove the host exposure (relay container and NodePort)
+    cmd: bash clusters/12-expose.sh down
+
+  archive:
+    # Read a run's Grafana dashboards AFTER the clusters are gone.
+    #
+    # The dashboards live in a Grafana inside west, so `task down` destroys the
+    # only way to look at a run's charts -- while the numbers themselves survive
+    # fine in results/ and in the TSDB archive. Without this, "we can screenshot
+    # it later" is false for every panel, and you learn that after teardown.
+    desc: "Replay an archived Prometheus TSDB with a local Grafana (:50761)"
+    cmd: bash grafana/archive-stack.sh up
+
+  archive:save:
+    # The 2026-08-27 run found dr-prometheus had no volume at all, so any pod
+    # restart destroyed the run. It has a hostPath now, which survives a restart
+    # and NOT `task down`. That left "archive the TSDB before teardown" as a
+    # documented manual step -- which is another way of saying it does not
+    # happen. It is a task now.
+    desc: "Copy the live Prometheus TSDB out to prometheus-archive/ (do this BEFORE task down)"
+    cmd: |
+      set -eu
+      mkdir -p prometheus-archive
+      out="prometheus-archive/tsdb-$(date +%Y-%m-%d-%H%M).tar"
+      kubectl --context=k3d-west -n dr-observability exec deploy/dr-prometheus -c prometheus -- \
+        tar cf - -C / prometheus > "$out"
+      # Verify rather than assume: a tar that cannot be listed is not a backup,
+      # and this is the last chance to find that out while the cluster still
+      # exists.
+      if tar tf "$out" >/dev/null 2>&1 && [ "$(tar tf "$out" | grep -c 'prometheus/data')" -gt 0 ]; then
+        echo "  ok  $out ($(du -h "$out" | cut -f1)) -- replay with: task archive TARBALL=$out"
+      else
+        echo "  FAILED: $out is not a readable TSDB archive" >&2; exit 1
+      fi
+
+  archive:down:
+    desc: Stop the archive replay stack
+    cmd: bash grafana/archive-stack.sh down
+
+  grafana:open:
+    desc: "Deprecated alias for `task expose` (was: kubectl port-forward)"
+    cmd: bash clusters/12-expose.sh up
+
+  # --- load ----------------------------------------------------------------
+
+  load:
+    desc: Start steady-state load in every cluster
+    cmd: bash clusters/08-load.sh start steady
+
+  load:ramp:
+    desc: Start the RPS ramp that walks the HAZL load band
+    cmd: bash clusters/08-load.sh start ramp
+
+  load:stop:
+    desc: Stop all load generators
+    cmd: bash clusters/08-load.sh stop
+
+  load:logs:
+    desc: Follow load generator output
+    cmd: bash clusters/08-load.sh logs
+
+  # --- observe -------------------------------------------------------------
+
+  watch:
+    desc: Live cross-cluster traffic and federation membership
+    cmd: bash verify/watch.sh
+
+  snapshot:
+    desc: One-shot traffic snapshot
+    cmd: bash verify/watch.sh once
+
+  dashboard:
+    desc: Open the Linkerd viz dashboard for a cluster (CLUSTER=west)
+    cmd: linkerd --context=k3d-{{.CLUSTER | default "west"}} viz dashboard
+
+  # --- the status page -----------------------------------------------------
+  #
+  # A static page over a JSON snapshot feed. It is a lens, not a gate: the
+  # verify/ scripts remain the things that exit non-zero, and nothing here is
+  # ever asserted on.
+  #
+  # Two terminals, because the sampler has to keep running while you watch:
+  #
+  #   task viz:sample     in one
+  #   task viz            in the other
+  #
+  # It is served rather than opened as a file because the page fetches its feed,
+  # and file:// origins cannot.
+
+  viz:
+    # Served by a restart-policied container via `task expose`, not a foreground
+    # python http.server -- the page then outlives the terminal that started it,
+    # which matters when an experiment runs longer than your session.
+    desc: Serve the status page at localhost:8731
+    cmd: bash clusters/12-expose.sh up
+
+  viz:sample:
+    desc: Sample the live mesh into the feed the status page reads (foreground)
+    cmd: bash viz/export.sh live
+
+  # NOTE: there is deliberately no viz:sample:start/stop task.
+  #
+  # go-task kills its process group when a command returns, so a background
+  # sampler started from a task is reaped the moment the task finishes -- even
+  # double-forked through a subshell. Rather than fight that, the RUNNERS start
+  # and stop their own sampler around the experiment (sampler_start /
+  # sampler_stop in verify/lib.sh), which is the only window whose phases matter
+  # and which dies with the run that owns it. Use `task viz:sample` above for a
+  # foreground sampler in a second terminal.
+
+  viz:phase:
+    desc: "Label the samples that follow (PHASE=injected)"
+    cmd: bash viz/export.sh phase {{.PHASE | default "unknown"}}
+
+  viz:replay:
+    desc: "Build a feed from a recorded run (RUN=fm2-graceful)"
+    cmd: >-
+      bash viz/export.sh replay results/{{.RUN}}
+      > viz/data/replay-{{.RUN}}.ndjson
+      && echo "open http://localhost:8731/?feed=data/replay-{{.RUN}}.ndjson"
+
+  # --- publishing ----------------------------------------------------------
+  #
+  # docs/ is the GitHub Pages root: the page, one feed per recorded run, and a
+  # manifest the page turns into a run selector. It is generated but committed
+  # -- see the header of viz/build.sh for why that is the right call here and
+  # not a lapse.
+
+  viz:build:
+    desc: Rebuild docs/ — the publishable replay site
+    cmd: bash viz/build.sh
+
+  viz:site:
+    desc: Preview the published site at localhost:8732
+    cmd: python3 -m http.server 8732 --directory docs
+
+  # --- experiments ---------------------------------------------------------
+  #
+  # Numbered by the order the write-up presents them: the mesh's own control
+  # plane first (nothing dies and every dashboard stays green), then a whole
+  # cluster, then a zone, then the region containing it.
+  #
+  # Each runner takes its own baseline, injects, measures, restores and exits
+  # non-zero on a failed check, so they are safe to run back to back.
+
+  fm0:
+    desc: "FM0 control run — no fault, measures the instrument's noise floor"
+    cmd: bash verify/fm0-control.sh
+
+  fm1:
+    desc: "FM1 control plane failure (MODE=destination|identity|mirror)"
+    cmd: bash verify/fm1-verify.sh {{.MODE | default "identity"}}
+
+  fm2:
+    desc: "FM2 cluster failure (VARIANT=graceful|hard)"
+    cmd: bash verify/fm2-verify.sh {{.VARIANT | default "graceful"}}
+
+  fm3:
+    desc: "FM3 zone brownout, the HAZL experiment (needs LINKERD_FLAVOR=bel)"
+    cmd: bash verify/fm3-verify.sh
+
+  fm4:
+    desc: "FM4 region failure (east + central, observed from west)"
+    cmd: bash verify/fm4-verify.sh
+
+  # --- verify --------------------------------------------------------------
+
+  fm5:
+    desc: "FM5 trust anchor (MODE=drift|anchor|latent) -- the domain with no failover target"
+    cmd: bash verify/fm5-verify.sh {{.MODE | default "drift"}}
+
+  enforce:
+    # ENFORCE_MESH was documented in clusters/lib.sh and referenced by NOTHING:
+    # `ENFORCE_MESH=1 task up` silently did nothing, and the only way to get an
+    # enforced run was to know to invoke the script by hand. Any result taken
+    # under it was therefore not reproducible from the documented interface.
+    desc: "Apply the mesh-membership policy for the current PROFILE"
+    cmd: |
+      if [ "${ENFORCE_MESH:-0}" = "1" ] || [ "${PROFILE:-default}" = "production" ]; then
+        bash clusters/10-enforce-mesh.sh on
+      else
+        bash clusters/10-enforce-mesh.sh status
+      fi
+
+  verify:network:
+    desc: Prove pod-to-pod reachability across all cluster pairs
+    cmd: bash verify/flat-network.sh
+
+  verify:multicluster:
+    desc: Prove all three exposure modes resolve correctly
+    cmd: bash verify/multicluster.sh
+
+  verify:meshed:
+    desc: Prove nothing is running outside the mesh (silently unencrypted)
+    cmd: bash verify/meshed.sh
+
+  verify:certs:
+    desc: Show certificate headroom and trust anchor state
+    cmd: bash verify/cert-headroom.sh all
+
+  verify:dashboard:
+    desc: Prove every Grafana panel returns data (OBSERVER=west)
+    cmd: bash verify/dashboard.sh
+
+  verify:
+    desc: Run every verification gate
+    cmds:
+      - task: verify:network
+      - task: verify:multicluster
+      - task: verify:meshed
+      - task: verify:dashboard
+
+  # --- teardown ------------------------------------------------------------
+
+  down:
+    desc: Destroy clusters and network (certs are kept)
+    cmd: bash clusters/99-destroy.sh
+
+  rebuild:
+    desc: Full cold rebuild — the reproducibility gate
+    cmds:
+      - task: down
+      - task: up

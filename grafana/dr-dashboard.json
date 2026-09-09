@@ -1,0 +1,1156 @@
+{
+  "uid": "dr-crosscluster",
+  "title": "Cross-cluster DR exercise",
+  "tags": [
+    "linkerd",
+    "disaster-recovery"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "5s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "annotations": {
+    "list": [
+      {
+        "name": "Experiments",
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "iconColor": "red",
+        "target": {
+          "type": "tags",
+          "matchAny": false,
+          "tags": [
+            "dr"
+          ],
+          "limit": 100
+        }
+      }
+    ]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "observer",
+        "label": "observed from",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "dr-prom"
+        },
+        "query": "label_values(response_total, cluster)",
+        "current": {
+          "text": [
+            "west"
+          ],
+          "value": [
+            "west"
+          ]
+        },
+        "includeAll": true,
+        "multi": true,
+        "refresh": 1,
+        "sort": 1,
+        "definition": "label_values(response_total, cluster)",
+        "hide": 0,
+        "options": [],
+        "allValue": ".*",
+        "description": "Which load generator to read. FM1 observes from central; FM2/FM3/FM4 from west."
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Red markers and regions are injected faults.** When a cluster dies, the *federated* service holds its request rate while the flat and gateway mirrors collapse \u2014 and the mTLS line never moves.\n\n**Set `observed from` to match the experiment: FM1 reads from `central`, FM2/FM3/FM4 from `west`.** Pick *All* to see every generator at once. Each row opens with a note on what its charts are for."
+      }
+    },
+    {
+      "type": "row",
+      "title": "Did anything alert?",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "panels": []
+    },
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "Read this row first. Every alert that fired, against the red fault regions.\n\nA green **no alerts firing** lane means nothing tripped. An alert *absent* here never left Normal \u2014 for the three `article` rules, that absence is the finding."
+      }
+    },
+    {
+      "type": "state-timeline",
+      "title": "Alerts \u2014 what actually fired  \u2190 the point",
+      "description": "Which alerts fired, lined up against the red fault regions.\n\nAn alert missing from this panel never left Normal. For the three `article` rules that absence IS the result. Grafana \u2192 Alerting \u2192 Alert rules lists all of them with state.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 0,
+            "fillOpacity": 85
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "FIRING",
+                  "color": "red",
+                  "index": 0
+                },
+                "0": {
+                  "text": "quiet",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "showValue": "never",
+        "mergeValues": true,
+        "alignValue": "left",
+        "rowHeight": 0.9,
+        "legend": {
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (alertname, origin, failure_mode) (ALERTS{alertstate=\"firing\"})",
+          "legendFormat": "{{failure_mode}} \u00b7 {{origin}} \u00b7 {{alertname}}",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "Z",
+          "expr": "vector(0)",
+          "legendFormat": "\u2014 no alerts firing \u2014",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Traffic \u2014 the money panels",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "panels": []
+    },
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Throughput** (left) is the whole argument: federated holds flat through a cluster loss while the mirrors fall to zero.\n\n**Errors** (right) is the contrast \u2014 a hung request increments no counter, so a dead mode shows almost none. The gap between the two charts *is* the result."
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Throughput by exposure mode  \u2190 the money panel",
+      "description": "Requests/sec per exposure mode. Federated should hold flat through a cluster loss while the flat and gateway mirrors fall to ~zero.\n\nThroughput, not error rate: a request with no endpoints hangs in the balancer queue and never increments an error counter.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "min": 0,
+          "unit": "reqps"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*federated.*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (authority) (rate(response_total{direction=\"outbound\", cluster=~\"$observer\", authority=~\"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\\\..*\"}[1m]))",
+          "legendFormat": "{{authority}}",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Errors by exposure mode",
+      "description": "Two definitions of \"error\", plotted together. Linkerd's `classification` counts only 5xx as failure; `verify/lib.sh` counts anything non-2xx.\n\nThey should overlap here. A gap means the write-up's numbers disagree with each other.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "min": 0,
+          "unit": "reqps",
+          "noValue": "No errors"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (authority) (rate(response_total{direction=\"outbound\", cluster=~\"$observer\", classification!=\"success\", authority=~\"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\\\..*\"}[1m]))",
+          "legendFormat": "{{authority}} \u2014 classified failure",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (authority) (rate(response_total{direction=\"outbound\", cluster=~\"$observer\", status_code!~\"2..\", authority=~\"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\\\..*\"}[1m]))",
+          "legendFormat": "{{authority}} \u2014 non-2xx",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "The foil \u2014 what a by-the-book SLO would have said",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "panels": []
+    },
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "Not the rig's health. Buoyant's *SLOs from Mesh Metrics* playbook, reproduced verbatim.\n\n**Availability** stays near 100% while a mode sits at 2% of expected. **Burn rate** needs ~52s of solid 5xx to page. **Rate floor** works, but its 5m window is too slow for a 90s fault."
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Availability SLI, computed the standard way",
+      "description": "FOIL \u2014 a by-the-book SLO, not the rig's health.\n\nWatch it hold near 100% while throughput shows a mode at 2% of expected. Two reasons it lies: a hung request lands in neither numerator nor denominator, and this is measured inbound, so a dead cluster's proxies stop reporting and the ratio is computed over the survivors.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 33
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "min": 0,
+          "unit": "percent",
+          "max": 100,
+          "decimals": 3
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * sum(rate(response_total{direction=\"inbound\", namespace=\"dr-demo\", target_port!=\"4191\", classification=\"success\"}[5m])) / clamp_min(sum(rate(response_total{direction=\"inbound\", namespace=\"dr-demo\", target_port!=\"4191\"}[5m])), 0.001)",
+          "legendFormat": "dr-demo only",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "expr": "100 * sum(rate(response_total{direction=\"inbound\", target_port!=\"4191\", classification=\"success\"}[5m])) / clamp_min(sum(rate(response_total{direction=\"inbound\", target_port!=\"4191\"}[5m])), 0.001)",
+          "legendFormat": "all meshed inbound",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Error-budget burn rate vs the 14.4x page threshold",
+      "description": "FOIL. The playbook's fast-burn rule.\n\nCrossing 14.4x needs ~52 seconds of solid 5xx in the trailing hour. Its 2m pending window also means a 90s fault cannot trip it whatever the expression says \u2014 hence the `SETTLE=900` run.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 33
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "min": 0,
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*pages.*"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(1 - sum(rate(response_total{direction=\"inbound\", target_port!=\"4191\", classification=\"success\"}[1h])) / clamp_min(sum(rate(response_total{direction=\"inbound\", target_port!=\"4191\"}[1h])), 0.001)) / 0.001",
+          "legendFormat": "burn rate",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "expr": "vector(14.4)",
+          "legendFormat": "pages at 14.4x",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Request-rate floor vs the 20% trigger",
+      "description": "FOIL, and the one rule that works \u2014 built on throughput rather than a ratio.\n\nBut a fault must cover ~80% of the 5m window to drag the rate under 20%, about 4 minutes. Over 90 seconds it only falls to ~70%. Right rule, wrong window.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 33
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "min": 0,
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*fires.*"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * sum by (authority) (rate(response_total{direction=\"outbound\", cluster=~\"$observer\", authority=~\"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\\\..*\"}[5m])) / clamp_min(sum by (authority) (rate(response_total{direction=\"outbound\", cluster=~\"$observer\", authority=~\"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\\\..*\"}[15m])), 0.001)",
+          "legendFormat": "{{authority}}",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "expr": "vector(20)",
+          "legendFormat": "fires below 20%",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Latency and federation membership",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 41
+      },
+      "panels": []
+    },
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Latency** is FM3's only signal before HAZL reacts: a zone brownout fails nothing, so only the tail moves.\n\n**Membership** is the federation signal. Watch it step 9 \u2192 6 on cluster loss, 9 \u2192 3 on region loss."
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Request latency p95 / p99  \u2190 FM3",
+      "description": "FM3's only signal before HAZL reacts. A zone brownout fails nothing: success rate stays 100% and no endpoint count moves.\n\nBuckets are coarse and exponential \u2014 read \"which bucket\", not milliseconds.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 46
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "min": 0,
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (authority, le) (rate(response_latency_ms_bucket{direction=\"outbound\", cluster=~\"$observer\", authority=~\"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\\\..*\"}[1m])))",
+          "legendFormat": "p95 \u2014 {{authority}}",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.99, sum by (authority, le) (rate(response_latency_ms_bucket{direction=\"outbound\", cluster=~\"$observer\", authority=~\"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\\\..*\"}[1m])))",
+          "legendFormat": "p99 \u2014 {{authority}}",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Federated membership \u2014 endpoints available",
+      "description": "How many endpoints exist across all clusters. Steps 9 \u2192 6 on cluster loss, 9 \u2192 3 on region loss.\n\nUses `adaptive_endpoints` on BEL and falls back to `endpoints{ready}` on OSS \u2014 under HAZL the latter means the active zone-local subset, so it would read 3 instead of 9.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 46
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 8
+          },
+          "min": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (cluster) (outbound_http_balancer_adaptive_endpoints{parent_name=\"app-federated\"}) or max by (cluster) (outbound_http_balancer_endpoints{endpoint_state=\"ready\",parent_name=\"app-federated\"})",
+          "legendFormat": "observed from {{cluster}}",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Where the traffic actually went",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 54
+      },
+      "panels": []
+    },
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 55
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**By destination cluster** \u2014 a dying cluster falls to zero while survivors absorb its share, derived from pod CIDRs since Linkerd labels no cluster on remote-discovery endpoints.\n\n**Zone locality** is a cost chart here: OSS balances zone-agnostically, so ~2/3 of requests cross a zone. HAZL should show ~100% local."
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Federated traffic by destination cluster",
+      "description": "A dying cluster's line should fall to zero while the survivors absorb its share.\n\nLinkerd emits no cluster label for remote-discovery endpoints, so this maps `target_ip` against the pod CIDRs (10.21=west, 10.22=east, 10.23=central).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 59
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 25,
+            "stacking": {
+              "mode": "normal"
+            }
+          },
+          "min": 0,
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (dst_cluster) (label_replace(label_replace(label_replace(rate(response_total{direction=\"outbound\", cluster=~\"$observer\", authority=~\"app-federated\\\\..*\"}[1m]), \"dst_cluster\", \"west\", \"target_ip\", \"10\\\\.21\\\\..*\"), \"dst_cluster\", \"east\", \"target_ip\", \"10\\\\.22\\\\..*\"), \"dst_cluster\", \"central\", \"target_ip\", \"10\\\\.23\\\\..*\"))",
+          "legendFormat": "served by {{dst_cluster}}",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Zone locality of federated traffic  \u2190 OSS has none",
+      "description": "Share of federated requests whose destination was in the client's own zone.\n\n**On OSS, ~1/3 local is correct and expected.** Open source Linkerd balances zone-agnostically across all 9 federated endpoints, and 3 of those 9 sit in the client's zone \u2014 so a third stays local and two thirds cross a zone boundary. That is the cross-AZ egress you are paying for.\n\n**Under HAZL it should sit at ~100% local**, and remote traffic appearing is HAZL widening the pool under load. The contrast between these two pictures is the point.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 59
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 40,
+            "stacking": {
+              "mode": "percent"
+            }
+          },
+          "min": 0,
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (dst_zone_locality) (rate(response_total{direction=\"outbound\", cluster=~\"$observer\", authority=~\"app-federated\\\\..*\"}[1m]))",
+          "legendFormat": "{{dst_zone_locality}}",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Zone-aware balancing \u2014 Buoyant Enterprise only",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 67
+      },
+      "panels": []
+    },
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 68
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "Both charts are empty on open source \u2014 the proxy emits no HAZL series. Use `LINKERD_FLAVOR=bel`.\n\nThe **load band** is not the documented 0.8/2.0 and it *moves* as the pool grows. **Endpoints** shows available vs actually used; that gap is the cross-zone traffic HAZL avoids."
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "HAZL load average vs its band  \u2190 FM3",
+      "description": "Load = latency \u00d7 throughput for the active pool. HAZL adds endpoints above the high band.\n\nThe band is NOT the documented 0.8/2.0 \u2014 those are per-endpoint, and the exposed values are the pool aggregate (measured 0.80\u00d7 and 2.00\u00d7 active). It also moves as the pool grows, which is why it must be plotted rather than assumed. BEL only.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 14,
+        "x": 0,
+        "y": 72
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 6
+          },
+          "min": 0,
+          "unit": "short",
+          "noValue": "BEL only \u2014 no HAZL metrics on this install"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*band.*"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (cluster) (outbound_http_balancer_adaptive_load_average{parent_name=\"app-federated\"})",
+          "legendFormat": "load \u2014 {{cluster}}",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "expr": "max by (cluster) (outbound_http_balancer_adaptive_load_band_high{parent_name=\"app-federated\"})",
+          "legendFormat": "band high \u2014 {{cluster}}",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "C",
+          "expr": "max by (cluster) (outbound_http_balancer_adaptive_load_band_low{parent_name=\"app-federated\"})",
+          "legendFormat": "band low \u2014 {{cluster}}",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Endpoints: available vs actually used",
+      "description": "`adaptive_endpoints` is everything available (9). `endpoints{ready}` is the subset HAZL is using \u2014 3 at rest, one per cluster, all same-zone.\n\nThe gap is the cross-zone traffic HAZL is avoiding. Watch the lower line step up when the band is crossed.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 10,
+        "x": 14,
+        "y": 72
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "min": 0,
+          "unit": "short",
+          "noValue": "BEL only \u2014 no HAZL metrics on this install"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (cluster) (outbound_http_balancer_adaptive_endpoints{parent_name=\"app-federated\"})",
+          "legendFormat": "available \u2014 {{cluster}}",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "expr": "max by (cluster) (outbound_http_balancer_endpoints{endpoint_state=\"ready\",parent_name=\"app-federated\"})",
+          "legendFormat": "in use \u2014 {{cluster}}",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Invariants \u2014 these should never move",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 81
+      },
+      "panels": []
+    },
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 82
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**mTLS** should be a dead-flat 100%. A dip means failover broke identity, or workloads came back unmeshed \u2014 the most under-reported failure here.\n\n**Certificate headroom** is how long a cluster serves with `linkerd-identity` down. FM1b's survival window, and a runbook number."
+      }
+    },
+    {
+      "type": "stat",
+      "title": "mTLS coverage",
+      "description": "TWO windows on purpose. The 5m series is the sustained view; the 1m series is what is happening now. A resolved mTLS dip looks identical to an ongoing one for a full five minutes on the 5m window alone, so anyone reading this live during a game day will misjudge it. Measured after a real incident on 2026-08-27: with plaintext already stopped, 1m read clean while the wider window was still depressed. If 1m is 100% and 5m is not, the incident is over and you are looking at its tail. Both below 100% means it is still happening.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 86
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 99
+              },
+              {
+                "color": "green",
+                "value": 100
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * sum(rate(response_total{direction=\"outbound\", authority=~\"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\\\..*\", tls=\"true\"}[5m])) / clamp_min(sum(rate(response_total{direction=\"outbound\", authority=~\"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\\\..*\"}[5m])), 0.001)",
+          "legendFormat": "mTLS % (5m, sustained)",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "expr": "100 * sum(rate(response_total{direction=\"outbound\", authority=~\"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\\\..*\", tls=\"true\"}[1m])) / clamp_min(sum(rate(response_total{direction=\"outbound\", authority=~\"(app-federated|app-flat-east|app-flat-west|app-gateway-east-gw)\\\\..*\"}[1m])), 0.001)",
+          "legendFormat": "mTLS % (1m, recent)",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Certificate headroom (hours)",
+      "description": "How long each cluster's data plane can keep serving if `linkerd-identity` goes away. Measured at rest here: 23h50m.\n\nThis is FM1b's real survival window, and the number that belongs in the runbook.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 18,
+        "x": 6,
+        "y": 86
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 5
+          },
+          "unit": "h",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 6
+              },
+              {
+                "color": "green",
+                "value": 12
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "min by (cluster) (control_identity_cert_expiration_timestamp_seconds - time()) / 3600",
+          "legendFormat": "{{cluster}}",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Gateways",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 92
+      },
+      "panels": []
+    },
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 93
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "Nothing collected these before: linkerd-viz skips `linkerd-multicluster`, and the admin port is default-deny.\n\nOnly links that *have* a gateway are plotted \u2014 a flat link reports `gateway_alive=0` forever. If probe latency crosses the timeout, the gateway is marked dead though nothing failed."
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Gateway reachability  \u2190 the metric nothing was collecting",
+      "description": "`gateway_alive`, from the service mirror controllers. Nothing collected this before: linkerd-viz doesn't scrape `linkerd-multicluster`, and the admin port returns 403 behind a default-deny Server.\n\nOnly links with `gateway_enabled=1` are plotted \u2014 a flat (remote-discovery) link has no gateway and reports 0 forever.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 97
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 20
+          },
+          "min": 0,
+          "max": 1,
+          "unit": "short",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "alive",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "noValue": "No gateway links from this cluster"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "gateway_alive and on (target_cluster_name) (gateway_enabled == 1)",
+          "legendFormat": "{{target_cluster_name}}",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Gateway probe latency p95",
+      "description": "How long the mirror controller's probe to each gateway takes. Baseline here is 1.7ms.\n\nIf this crosses the probe timeout the gateway is marked dead and traffic stops, even though nothing about the gateway failed (linkerd/linkerd2#8590). Watch it during FM3.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dr-prom"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 97
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "min": 0,
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (target_cluster_name, le) (rate(gateway_probe_latency_ms_bucket[5m])))",
+          "legendFormat": "p95 \u2014 {{target_cluster_name}}",
+          "range": true,
+          "instant": false
+        }
+      ]
+    }
+  ]
+}
