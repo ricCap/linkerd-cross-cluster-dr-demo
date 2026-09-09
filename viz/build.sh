@@ -34,12 +34,17 @@ VIZ="${REPO_ROOT}/viz"
 # new experiment publishes without needing an entry here first.
 label_for() {
   case "$1" in
+    fm0-control)     echo "FM0 · null control — no fault injected" ;;
     fm1-destination) echo "FM1 · control plane — destination controller" ;;
     fm1-identity)    echo "FM1 · control plane — identity" ;;
+    fm1-mirror)      echo "FM1 · control plane — service mirror" ;;
     fm2-graceful)    echo "FM2 · cluster loss — graceful" ;;
     fm2-hard)        echo "FM2 · cluster loss — hard partition" ;;
     fm3)             echo "FM3 · zone brownout" ;;
     fm4)             echo "FM4 · region loss" ;;
+    fm5-drift)       echo "FM5 · trust anchor — issuer drift, rejected" ;;
+    fm5-anchor)      echo "FM5 · trust anchor — rotation reaches no other cluster" ;;
+    fm5-latent)      echo "FM5 · trust anchor — latent on an idle cluster" ;;
     *)               echo "$1" ;;
   esac
 }

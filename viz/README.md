@@ -248,7 +248,7 @@ task viz:site      # preview it at localhost:8732
 ```
 
 `docs/` is a self-contained static site: the page, one NDJSON feed per recorded
-run, and a manifest the page turns into a run selector. About 64KB in total.
+run, and a manifest the page turns into a run selector. About 80KB in total.
 
 To serve it, go to the repository's **Settings → Pages** and set *Source* to
 **Deploy from a branch**, branch `main`, folder `/docs`. No workflow and no
@@ -288,6 +288,24 @@ current table is not a small error but a confident wrong answer: Docker assigns
 those addresses and they change across rebuilds, so a `172.28.0.7` that was
 `east` last week can be `central` today. A run that recorded no table reports
 `node_table: false`, and the page says attribution is unavailable.
+
+### A window that is not positive is not published
+
+A replay's window is `mtime(this snapshot) - mtime(the previous one)`, and
+nothing guarantees the snapshots were written in phase order. A re-copied or
+re-touched baseline can make the `during` snapshot look *older* than the run
+that produced it.
+
+That is not a near-miss. Every rate divides by the window, so a negative one
+turns a healthy 30 rps into `-0.0` across every mode, which the page draws as a
+total outage — the exact inversion the section below exists to prevent. The
+production FM3 run was published that way, with a window of `-295s`, before
+`viz/export.sh` started refusing it. It has been withdrawn, which is why zone
+brownout appears on the site under `default` only.
+
+The check is a hard stop rather than a warning, because snapshot mtimes are the
+only record of a replay's timing: a bad window cannot be recomputed, so the run
+has to be re-recorded or dropped.
 
 ### Zero is not the same as dead
 

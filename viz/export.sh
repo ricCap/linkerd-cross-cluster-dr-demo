@@ -485,7 +485,7 @@ emit_sample() {
 mtime_of() { stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null; }
 
 replay() {
-  local dir="$1" f label prev="" run obs
+  local dir="$1" f label prev="" run obs window
   [ -d "$dir" ] || die "no such results directory: ${dir}"
   run="$(basename "$dir")"
 
@@ -565,7 +565,27 @@ OBSERVER (default 'west')."
       fi
       printf '}}\n'
     else
-      printf ',"window":%s,' "$(( $(mtime_of "$f") - $(mtime_of "$prev") ))"
+      # Refuse a non-positive window rather than dividing by it.
+      #
+      # The window is mtime(this) - mtime(previous), and nothing guarantees the
+      # snapshots were written in phase order: a re-copied or re-touched
+      # baseline makes `during` look 295 seconds older than the run that
+      # produced it. That is not a near-miss. Every rate divides by this
+      # number, so a negative window turns a healthy 30 rps into -0.0 across
+      # every mode -- which the page draws as a total outage, and which is the
+      # exact inversion `Zero is not the same as dead` exists to prevent.
+      #
+      # It already published one run that way (production-fm3), so this is a
+      # hard stop, not a warning: an unusable keyframe must not reach the site
+      # looking like a result.
+      window="$(( $(mtime_of "$f") - $(mtime_of "$prev") ))"
+      [ "$window" -gt 0 ] || die "${run}: snapshot '$(basename "$f")' has mtime
+${window}s relative to '$(basename "$prev")', so its window is not positive and
+every rate derived from it would be wrong.
+
+Snapshot mtimes are the only record of a replay's timing, so this cannot be
+recomputed -- the run has to be re-recorded, or dropped."
+      printf ',"window":%s,' "$window"
       topology_json
       printf ',"sources":{'
       metrics_json "$OBSERVER" "$prev" "$obs_nodes" < "$f"
