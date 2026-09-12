@@ -530,3 +530,48 @@ them.
 
 None of these were visible without injecting a real fault and then checking the
 rig afterwards rather than trusting the runner's own summary.
+
+---
+
+## 16. Zone labels were duplicated across regions  *(fixed; FM3 needs re-measuring)*
+
+Every cluster labelled its nodes `zone-a` / `zone-b` / `zone-c`. `ZONES` was a
+single global list, so west's `zone-c` and east's `zone-c` were **the same
+string** — describing a zone that spans two regions, which does not exist.
+`us-east-1a` and `us-west-2a` are unrelated failure domains that happen to share
+a letter.
+
+It was not a naming problem. `dst_zone_locality` is computed by comparing those
+labels, so **cross-region traffic was being reported as zone-local**, and FM3's
+resting measurement rested on the duplication:
+
+> At rest HAZL used 3 of 9 endpoints — the same-zone pod in *each* of the three
+> clusters, all reporting `dst_zone_locality=local`. It preserves zone affinity
+> across cluster boundaries.
+
+"Across cluster boundaries" silently included *across regions*. With
+region-scoped names a west client has no zone-local endpoint in region-a at all,
+so **that finding does not carry over and must be re-measured.** The claim will
+probably narrow to "within a region", which is still true, still useful, and
+considerably less surprising.
+
+It may also explain the unexplained `active=4` baseline (§ open questions):
+that number is a count of zone-locality matches, and the matches were being
+manufactured by the labels.
+
+**Fixed.** Zones are now `zone-<region letter><n>` — `zone-a1..a3` in region-a,
+`zone-b1..b3` in region-b — derived per cluster from its region. East and
+central still share theirs, which is correct: two clusters in one region
+genuinely can sit in the same availability zones.
+
+Two consequences:
+
+- **FM3 no longer browns out west**, and now for the right reason. Previously
+  the justification was "keep the observer clean"; the real one is that a zone
+  spanning two regions is not a thing that can fail.
+- **The brownout's zone selection was silently broken by the fix and had to be
+  rewritten.** It picked the *load generator's* zone — west's, `zone-b*` — while
+  the fault lands in region-a, `zone-a*`. Chaos Mesh reports no error for a
+  selector matching zero pods, so the run would have looked clean having
+  injected nothing. It now takes the first zone of the target region and
+  **refuses to run** if no node there carries it.

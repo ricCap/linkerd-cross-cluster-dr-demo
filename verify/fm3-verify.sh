@@ -238,10 +238,23 @@ cleanup() {
  bash "${REPO_ROOT}/chaos/fm3-zone-brownout.sh" stop >/dev/null 2>&1 || true; }
 trap cleanup EXIT
 
-ZONE="$(kubectl --context="$(ctx "$OBSERVER")" get node \
-  "$(kubectl --context="$(ctx "$OBSERVER")" -n "$APP_NS" get pod -l app=loadgen \
-     -o jsonpath='{.items[0].spec.nodeName}')" \
-  -o jsonpath='{.metadata.labels.topology\.kubernetes\.io/zone}' 2>/dev/null)"
+# The clusters the fault lands in: everything except the one generating load.
+brownout_clusters() {
+  for c in $(clusters); do [ "$c" = "${LOAD_CLUSTER:-west}" ] || echo "$c"; done
+}
+
+# The zone to brown out is the chaos script's to choose, and it chooses one that
+# exists in the clusters it targets. Deriving it here from the OBSERVER's node
+# was correct only while every cluster shared zone names: with region-scoped
+# zones the observer sits in region-b and the fault lands in region-a, so this
+# produced a zone that matches nothing and a run that measures nothing.
+#
+# So mirror the chaos script's choice -- the first zone of the region being
+# browned out -- rather than leaving the zone for it to pick. The premise check
+# below compares node zones against this value, and an empty one matches no
+# node in any cluster: every run would abort reporting a missing pod, for a
+# fault that was configured correctly.
+ZONE="${ZONE:-$(zones_for "$(brownout_clusters | head -1)" | head -1)}"
 
 banner "FM3 zone brownout -- '${ZONE}', observed from '${OBSERVER}'"
 
@@ -277,9 +290,7 @@ banner "FM3 zone brownout -- '${ZONE}', observed from '${OBSERVER}'"
 size_latency() {
   local high="$1" ms n_all n_brown
   n_all="$(clusters | grep -c .)"
-  n_brown="$(for c in $(clusters); do
-               [ "$c" = "${LOAD_CLUSTER:-west}" ] || echo "$c"
-             done | grep -c .)"
+  n_brown="$(brownout_clusters | grep -c .)"
   [ "${n_brown:-0}" -gt 0 ] || n_brown="$n_all"
   ms="$(awk -v ref="$LATENCY_REF_MS" -v refhigh="$LATENCY_REF_HIGH" \
             -v high="$high" -v margin="$LATENCY_MARGIN" \
@@ -371,7 +382,7 @@ else
      band high        ${base_high}   (active pool ${base_active})
      reference        ${LATENCY_REF_MS}ms calibrated for a high of ${LATENCY_REF_HIGH}
      margin           ${LATENCY_MARGIN}%
-     reach            $(for c in $(clusters); do [ "$c" = "${LOAD_CLUSTER:-west}" ] || echo "$c"; done | grep -c .) of $(clusters | grep -c .) clusters browned out
+     reach            $(brownout_clusters | grep -c .) of $(clusters | grep -c .) clusters browned out
      -> injecting     ${LATENCY}
      Override with LATENCY=<n>ms if this rig disagrees."
 fi
@@ -380,15 +391,16 @@ fi
 
 # The premise, checked before the fault rather than inferred from its absence.
 #
-# FM3 slows the load generator's zone in every cluster EXCEPT the load cluster,
-# and the whole experiment assumes each of those clusters has an app pod in that
-# zone for the fault to land on. The spread constraint that arranges this is
+# FM3 slows one zone of the browned-out region in every cluster EXCEPT the load
+# cluster, and the whole experiment assumes each of those clusters has an app pod
+# in that zone for the fault to land on. The spread constraint that arranges this is
 # `whenUnsatisfiable: ScheduleAnyway` -- deliberately soft, because a strict one
 # deadlocks when the hard-zone variant cordons a node -- so the scheduler drifts
 # away from it across a session of restarts, and nothing noticed.
 #
-# Measured 2026-09-08: after a day of experiments the load generator sat in
-# zone-b and NEITHER east NOR central had a zone-b app pod. The brownout hit
+# Measured 2026-09-08, under the old cluster-wide zone names: after a day of
+# experiments the load generator sat in `zone-b` and NEITHER east NOR central had
+# a `zone-b` app pod. The brownout hit
 # nothing, and the run reported "HAZL did not react" and "no remote-zone
 # traffic" -- a confident negative result about a fault that never touched an
 # endpoint anyone was using.

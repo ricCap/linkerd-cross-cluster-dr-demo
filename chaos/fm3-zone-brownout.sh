@@ -57,16 +57,24 @@ BROWNOUT_CLUSTERS="${BROWNOUT_CLUSTERS:-$(for c in $(clusters); do
   [ "$c" = "${LOAD_CLUSTER:-west}" ] || echo "$c"
 done)}"
 
-# Which zone to brown out. Defaults to the zone the load generator lives in,
-# because that is the zone HAZL is currently keeping traffic inside -- browning
-# out any other zone would change nothing, since no traffic goes there.
+# Which zone to brown out.
+#
+# It used to be the load generator's own zone, on the reasoning that this is the
+# zone HAZL keeps traffic inside, so browning out any other would change
+# nothing. Zones are region-scoped now, and that reasoning broke with them: the
+# generator lives in west (region-b, zone-b*) while the brownout targets
+# region-a (zone-a*), so the detected zone does not exist on any node being
+# targeted. The selector would match nothing and the experiment would report a
+# clean run having injected no fault at all.
+#
+# Default to the first zone of the region the target clusters are in, and then
+# PROVE the zone exists there before applying anything. A chaos experiment that
+# silently selects zero pods is worse than one that fails.
 detect_zone() {
-  local node
-  node="$(kubectl --context="$(ctx west)" -n "$APP_NS" get pod -l app=loadgen \
-    -o jsonpath='{.items[0].spec.nodeName}' 2>/dev/null)"
-  [ -n "$node" ] || { echo "zone-b"; return; }
-  kubectl --context="$(ctx west)" get node "$node" \
-    -o jsonpath='{.metadata.labels.topology\.kubernetes\.io/zone}' 2>/dev/null
+  local first_target
+  first_target="$(echo $BROWNOUT_CLUSTERS | awk '{print $1}')"
+  [ -n "$first_target" ] || { echo ""; return; }
+  zones_for "$first_target" | head -1
 }
 
 ZONE="${2:-$(detect_zone)}"
@@ -74,7 +82,22 @@ LATENCY="${3:-400ms}"
 
 case "$ACTION" in
   start)
-    log "FM3: browning out '${ZONE}' (+${LATENCY} latency) in every cluster"
+    [ -n "$ZONE" ] || die "no zone to brown out (BROWNOUT_CLUSTERS is empty?)"
+
+    # Refuse to inject a fault that cannot match anything. Chaos Mesh reports no
+    # error for a selector that matches zero pods, so without this the run looks
+    # successful and measures nothing -- the exact failure mode this repo keeps
+    # finding in its own instruments.
+    for name in $BROWNOUT_CLUSTERS; do
+      if ! kubectl --context="$(ctx "$name")" get nodes \
+           -l "topology.kubernetes.io/zone=${ZONE}" \
+           -o name 2>/dev/null | grep -q .; then
+        die "cluster '${name}' has no node in zone '${ZONE}'.
+Zones are region-scoped: $(cluster_region "$name") uses $(zones_for "$name" | tr '\n' ' ')."
+      fi
+    done
+
+    log "FM3: browning out '${ZONE}' (+${LATENCY} latency) in: $(echo $BROWNOUT_CLUSTERS | tr '\n' ' ')"
     log "  apps: ${BROWNOUT_APPS}"
     log "  pods stay Ready throughout -- this is a brownout, not a failure"
 

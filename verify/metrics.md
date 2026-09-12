@@ -75,7 +75,7 @@ One counter per (destination endpoint × status × TLS state). Labels present:
 | `target_ip` | `10.22.1.6` | **which cluster served** — see note below |
 | `tls` | `true` | mTLS continuity |
 | `server_id` | `default.dr-demo.serviceaccount...` | peer identity |
-| `dst_zone` | `zone-b` | zone attribution |
+| `dst_zone` | `zone-a1` | zone attribution |
 | `dst_zone_locality` | `local` / `remote` / `unknown` | blast-radius containment |
 | `status_code`, `classification` | `200`, `success` | error budget |
 | `dst_target_cluster` | `east-gw` | **gateway mirrors only** |

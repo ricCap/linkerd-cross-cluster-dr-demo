@@ -18,12 +18,13 @@ mkdir -p "$GEN_DIR"
 
 # Zone and region labels, one node per zone: the first zone goes on the server,
 # which stays schedulable rather than tainted, and each zone after that on an
-# agent. Generated from ZONES rather than written out, because three hardcoded
-# labels meant overriding ZONES changed the comment in lib.sh and nothing else.
+# agent. Generated from the cluster's own region rather than written out: zones
+# are region-scoped, so east and central share region-a's zones while west has
+# region-b's. Hardcoding them once meant a zone label that spanned two regions.
 zone_labels() {
   local name="$1" region z i=0 filter
   region="$(cluster_region "$name")"
-  for z in $ZONES; do
+  for z in $(zones_for "$name"); do
     if [ "$i" = "0" ]; then filter="server:0"; else filter="agent:$(( i - 1 ))"; fi
     printf '      - label: topology.kubernetes.io/zone=%s\n        nodeFilters: [%s]\n' "$z" "$filter"
     printf '      - label: topology.kubernetes.io/region=%s\n        nodeFilters: [%s]\n' "$region" "$filter"
