@@ -43,10 +43,15 @@ export REPO_ROOT
 #
 # Pod and service CIDRs must not overlap across clusters: on a flat network a
 # pod IP has to be globally unambiguous or cross-cluster routing is impossible.
+# Row order is presentation order -- west, central, east, the way the charts
+# and every log line read. The CIDR columns are keyed by cluster NAME, not by
+# position, so they are deliberately not left in ascending order here: east
+# keeps 10.22 and central keeps 10.23, which is what the recorded runs under
+# results/ and docs/feeds/ were measured against.
 CLUSTER_TABLE="
 west:region-b:10.21.0.0/16:10.245.0.0/16
-east:region-a:10.22.0.0/16:10.246.0.0/16
 central:region-a:10.23.0.0/16:10.247.0.0/16
+east:region-a:10.22.0.0/16:10.246.0.0/16
 "
 
 # --- zones ------------------------------------------------------------------
@@ -287,12 +292,16 @@ all_cluster_networks() {
   echo "${out%,}"
 }
 
-# Clusters belonging to a region -- used by the FM4 region-loss experiment.
-# Every distinct region in the topology table, in declaration order.
+# Every distinct region in the topology table, sorted -- region-a before
+# region-b. Declaration order cannot give that: west is deliberately the first
+# row (it is the observer, and no experiment may touch it) and west is the one
+# cluster in region-b. Charts read this through all_zones(), so sorting here is
+# what puts region-a's zones first.
 regions() {
-  echo "$CLUSTER_TABLE" | grep -v '^[[:space:]]*$' | cut -d: -f2 | awk '!seen[$0]++'
+  echo "$CLUSTER_TABLE" | grep -v '^[[:space:]]*$' | cut -d: -f2 | sort -u
 }
 
+# Clusters belonging to a region -- used by the FM4 region-loss experiment.
 clusters_in_region() {
   local want="$1" c
   for c in $(clusters); do

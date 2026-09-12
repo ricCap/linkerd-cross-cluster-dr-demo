@@ -33,6 +33,13 @@ REGION="${2:-region-a}"
 
 targets() { clusters_in_region "$REGION"; }
 
+# A region name that matches no cluster yields an empty target list, and every
+# loop below then iterates nothing: the run logs "failing region" and reports
+# success having partitioned no cluster at all. Same silent-zero-target failure
+# the FM3 brownout guards against -- see SHORTCOMINGS section 16.
+[ -n "$(targets)" ] \
+  || die "region '${REGION}' contains no clusters. Known regions: $(regions | tr '\n' ' ')"
+
 nodes_of() {
   docker ps -a --format '{{.Names}}' \
     | grep -E "^k3d-${1}-(server|agent)-[0-9]+$" | sort

@@ -575,3 +575,18 @@ Two consequences:
   selector matching zero pods, so the run would have looked clean having
   injected nothing. It now takes the first zone of the target region and
   **refuses to run** if no node there carries it.
+
+**The recorded runs keep the old names, and must.** Everything under
+`results/` and `docs/feeds/` was measured on the duplicated labels, so it is
+written in `zone-a`/`zone-b`/`zone-c` and stays that way. The names are not
+mechanically translatable — a bare `zone-b` is west's `zone-b2` or east's
+`zone-a2` depending on whose node it was — and where the cluster *is*
+recoverable, rewriting would be worse than untidy. The 2026-09-08 FM3 result
+above is *about* the collision: "neither east nor central had a `zone-b` pod"
+is a finding in the old vocabulary and a tautology in the new one, since
+east's zones are `zone-a*` and never could have matched. Those files are the
+record of what was measured, not documentation of the current topology. The
+way they acquire the new names is a re-run on a region-scoped rig, which is
+the FM3 re-measurement this section already calls for; it regenerates the
+feeds, and the published viz — which reads zone names out of each feed rather
+than from the code — catches up at the same moment.

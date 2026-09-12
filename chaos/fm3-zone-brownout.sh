@@ -88,10 +88,15 @@ case "$ACTION" in
     # error for a selector that matches zero pods, so without this the run looks
     # successful and measures nothing -- the exact failure mode this repo keeps
     # finding in its own instruments.
+    #
+    # Read the node list rather than piping it into `grep -q`: grep exits at the
+    # first match while kubectl is still writing, and pipefail turns that SIGPIPE
+    # into a 141 -- so a cluster that DOES have the zone reports that it does not,
+    # and a correctly configured run dies here. Same trap viz/export.sh documents.
     for name in $BROWNOUT_CLUSTERS; do
-      if ! kubectl --context="$(ctx "$name")" get nodes \
-           -l "topology.kubernetes.io/zone=${ZONE}" \
-           -o name 2>/dev/null | grep -q .; then
+      zone_nodes="$(kubectl --context="$(ctx "$name")" get nodes \
+        -l "topology.kubernetes.io/zone=${ZONE}" -o name 2>/dev/null || true)"
+      if [ -z "$zone_nodes" ]; then
         die "cluster '${name}' has no node in zone '${ZONE}'.
 Zones are region-scoped: $(cluster_region "$name") uses $(zones_for "$name" | tr '\n' ' ')."
       fi

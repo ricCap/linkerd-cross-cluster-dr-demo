@@ -43,8 +43,8 @@ measured against.
 | Cluster | Region | Nodes |
 |---|---|---|
 | `west` | `region-b` | server=`zone-b1`, agent-0=`zone-b2`, agent-1=`zone-b3` |
-| `east` | `region-a` | server=`zone-a1`, agent-0=`zone-a2`, agent-1=`zone-a3` |
-| `central` | `region-a` | same as east — one region, shared zones |
+| `central` | `region-a` | server=`zone-a1`, agent-0=`zone-a2`, agent-1=`zone-a3` |
+| `east` | `region-a` | same as central — one region, shared zones |
 
 `east` and `central` share a region on purpose, so "region failure" really means
 losing two clusters at once rather than one cluster with a new label.

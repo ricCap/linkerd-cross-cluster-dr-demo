@@ -40,6 +40,11 @@
 need linkerd kubectl docker
 
 REGION="${REGION:-region-a}"
+
+# An unknown region silently selects zero clusters -- the whole experiment then
+# passes having tested nothing. Fail loudly instead.
+[ -n "$(clusters_in_region "$REGION")" ] \
+  || die "region '${REGION}' contains no clusters. Known regions: $(regions | tr '\n' ' ')"
 OBSERVER="${OBSERVER:-west}"
 SETTLE="${SETTLE:-120}"
 RPS="${RPS:-30}"
