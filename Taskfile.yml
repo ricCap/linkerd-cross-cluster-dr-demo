@@ -126,7 +126,13 @@ tasks:
     # fine in results/ and in the TSDB archive. Without this, "we can screenshot
     # it later" is false for every panel, and you learn that after teardown.
     desc: "Replay an archived Prometheus TSDB with a local Grafana (:50761)"
-    cmd: bash grafana/archive-stack.sh up
+    # TARBALL is passed through rather than dropped. `archive:save` ends by
+    # printing "replay with: task archive TARBALL=<file>", and without this that
+    # instruction silently replayed whichever archive happened to be newest --
+    # so the wrong run could be read, screenshotted and quoted with nothing
+    # anywhere saying so. Empty by default, which lands on the script's own
+    # newest-file behaviour.
+    cmd: bash grafana/archive-stack.sh up {{.TARBALL}}
 
   archive:save:
     # The 2026-08-27 run found dr-prometheus had no volume at all, so any pod
@@ -138,17 +144,97 @@ tasks:
     cmd: |
       set -eu
       mkdir -p prometheus-archive
-      out="prometheus-archive/tsdb-$(date +%Y-%m-%d-%H%M).tar"
+      stamp="$(date +%Y-%m-%d-%H%M)"
+      out="prometheus-archive/tsdb-${stamp}.tar"
       kubectl --context=k3d-west -n dr-observability exec deploy/dr-prometheus -c prometheus -- \
         tar cf - -C / prometheus > "$out"
       # Verify rather than assume: a tar that cannot be listed is not a backup,
       # and this is the last chance to find that out while the cluster still
       # exists.
-      if tar tf "$out" >/dev/null 2>&1 && [ "$(tar tf "$out" | grep -c 'prometheus/data')" -gt 0 ]; then
-        echo "  ok  $out ($(du -h "$out" | cut -f1)) -- replay with: task archive TARBALL=$out"
+      #
+      # The test is for a `wal/` entry, NOT for `prometheus/data`. The container
+      # runs --storage.tsdb.path=/prometheus, so `tar cf - -C / prometheus`
+      # produces prometheus/wal/, prometheus/chunks_head/, prometheus/lock --
+      # and no `data` directory at any depth. The old check therefore rejected
+      # every archive it was given, exiting 1 with "not a readable TSDB archive"
+      # AFTER writing a perfectly good one. `wal/` is also exactly what
+      # grafana/archive-stack.sh locates the TSDB by, so the two agree on what a
+      # valid archive is rather than testing different things.
+      if tar tf "$out" >/dev/null 2>&1 && [ "$(tar tf "$out" | grep -c '/wal/\?$')" -gt 0 ]; then
+        echo "  ok  $out ($(du -h "$out" | cut -f1))"
       else
         echo "  FAILED: $out is not a readable TSDB archive" >&2; exit 1
       fi
+
+      # The fault annotations, which the TSDB does NOT contain.
+      #
+      # verify/annotate.sh writes them into Grafana's own database, so they die
+      # with the Grafana that held them and a replayed archive comes up with
+      # unshaded charts -- while dr-dashboard.json's first text panel tells the
+      # reader that "red markers and regions are injected faults". Saving the
+      # TSDB alone preserves the numbers and loses what makes them legible.
+      #
+      # Read through a kubectl exec, the same trick verify/annotate.sh uses: the
+      # Grafana image has wget, it can reach itself, and this needs no
+      # port-forward and no assumption about the host's network.
+      #
+      # Best-effort, exactly as annotate.sh treats a missing Grafana. A run
+      # measured without annotations is still a run worth archiving, and failing
+      # here after the TSDB is already on disk would be the worst moment to stop.
+      annots="prometheus-archive/annotations-${stamp}.json"
+      pod="$(kubectl --context=k3d-west -n dr-observability get pod -l app=grafana \
+        -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+      if [ -n "$pod" ]; then
+        kubectl --context=k3d-west -n dr-observability exec "$pod" -- \
+          wget -qO- "http://localhost:3000/api/annotations?tags=dr&from=0&to=$(( $(date +%s) * 1000 ))&limit=1000" \
+          > "$annots" 2>/dev/null || true
+      fi
+      n="$(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))))' "$annots" 2>/dev/null || echo 0)"
+      if [ "$n" -gt 0 ]; then
+        echo "  ok  $annots ($n fault annotations)"
+      else
+        rm -f "$annots"
+        echo "  !!  no annotations recovered -- the replay's charts will be unshaded" >&2
+      fi
+
+      echo "  replay with: task archive TARBALL=$out"
+
+  archive:fetch:
+    # The two-command path for anyone who wants to READ a run rather than run
+    # one: this and `task archive`, no clusters and no 20GB of Docker.
+    #
+    # gh when it is there, curl when it is not. A reader arriving from the
+    # write-up has a browser and curl; assuming the GitHub CLI would put a login
+    # between them and the dashboard, which is the friction this whole path
+    # exists to remove.
+    desc: "Download the published sample run into prometheus-archive/ (RELEASE=sample-run-fm2-hard)"
+    vars:
+      RELEASE: '{{.RELEASE | default "sample-run-fm2-hard"}}'
+      REPO: '{{.REPO | default "ricCap/linkerd-cross-cluster-dr-demo"}}'
+    cmd: |
+      set -eu
+      mkdir -p prometheus-archive
+      if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+        gh release download "{{.RELEASE}}" --repo "{{.REPO}}" \
+          --dir prometheus-archive --clobber
+      else
+        base="https://github.com/{{.REPO}}/releases/download/{{.RELEASE}}"
+        for f in "tsdb-{{.RELEASE}}.tar.gz" "annotations-{{.RELEASE}}.json"; do
+          echo "  fetching $f"
+          # -f so a 404 is an error rather than an HTML page saved under a .tar.gz
+          # name -- which would reach archive-stack.sh as an unreadable archive
+          # and be reported there as a corrupt TSDB.
+          if ! curl -fL --progress-bar -o "prometheus-archive/$f" "$base/$f"; then
+            rm -f "prometheus-archive/$f"
+            echo "  FAILED to fetch $f from release '{{.RELEASE}}'." >&2
+            echo "  Check the releases page, or take your own archive from a live" >&2
+            echo "  rig with 'task archive:save' before 'task down'." >&2
+            exit 1
+          fi
+        done
+      fi
+      ls -la prometheus-archive/
+      echo "  now: task archive"
 
   archive:down:
     desc: Stop the archive replay stack

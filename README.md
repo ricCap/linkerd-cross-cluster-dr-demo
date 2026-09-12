@@ -154,6 +154,26 @@ serves.
 The page is a **lens, not a gate**: `verify/*.sh` are the things that exit
 non-zero. See [`viz/README.md`](viz/README.md) for the feed format.
 
+## The Grafana dashboard, without building anything
+
+The status page is the topology. The Grafana dashboard is the measurement — the
+charts every claim in `results/` is read off. It normally lives in a Grafana
+inside `west`, which means `task down` destroys it.
+
+You do not need a cluster to look at one:
+
+```bash
+task archive:fetch    # a recorded run: its Prometheus TSDB and fault annotations
+task archive          # replay both against a throwaway Grafana on :50761
+```
+
+Two Docker containers, no k3d, about two minutes. `task archive:down` removes
+them. On a live rig it is `task expose` and <http://localhost:50760> instead —
+and `task archive:save` **before** `task down` is how you keep a run's charts.
+
+[`grafana/README.md`](grafana/README.md) is the guide: both paths, then what
+each row of the dashboard means and what shape to expect from it.
+
 ## Results
 
 - [`results/FINDINGS.md`](results/FINDINGS.md) — what each failure mode actually did
@@ -181,6 +201,8 @@ verify/     flat-network.sh, multicluster.sh   hard gates (non-zero exit)
 load/       k6 scripts: steady.js, ramp.js
 chaos/      failure-mode manifests and scripts
 grafana/    dr-dashboard.json, alert-rules.yml
+            archive-stack.sh                   replays a run's charts offline
+            README.md                          how to open it, and how to read it
 viz/        export.sh + index.html             status page over a snapshot feed
             build.sh                           bundles recorded runs into docs/
 docs/       generated, committed               the published replay site
