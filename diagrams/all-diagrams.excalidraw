@@ -161,8 +161,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "region-a \u2014 two clusters",
-      "originalText": "region-a \u2014 two clusters",
+      "text": "region-a — two clusters",
+      "originalText": "region-a — two clusters",
       "fontSize": 11.0,
       "fontFamily": 3,
       "textAlign": "left",
@@ -650,7 +650,7 @@
     {
       "id": "all-01-steady-state-topology-019",
       "type": "rectangle",
-      "x": 308.0,
+      "x": 616.0,
       "y": 114.0,
       "width": 228.0,
       "height": 220.0,
@@ -679,7 +679,7 @@
     {
       "id": "all-01-steady-state-topology-020",
       "type": "text",
-      "x": 324.0,
+      "x": 632.0,
       "y": 124.5,
       "width": 36.0,
       "height": 18.75,
@@ -716,7 +716,7 @@
     {
       "id": "all-01-steady-state-topology-021",
       "type": "text",
-      "x": 324.0,
+      "x": 632.0,
       "y": 145.55,
       "width": 75.6,
       "height": 13.125,
@@ -753,7 +753,7 @@
     {
       "id": "all-01-steady-state-topology-022",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 166.0,
       "width": 200.0,
       "height": 28.0,
@@ -782,7 +782,7 @@
     {
       "id": "all-01-steady-state-topology-023",
       "type": "text",
-      "x": 334.0,
+      "x": 642.0,
       "y": 174.1,
       "width": 46.199999999999996,
       "height": 13.75,
@@ -819,7 +819,7 @@
     {
       "id": "all-01-steady-state-topology-024",
       "type": "ellipse",
-      "x": 491.0,
+      "x": 799.0,
       "y": 175.0,
       "width": 10.0,
       "height": 10.0,
@@ -846,7 +846,7 @@
     {
       "id": "all-01-steady-state-topology-025",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 200.0,
       "width": 200.0,
       "height": 28.0,
@@ -875,7 +875,7 @@
     {
       "id": "all-01-steady-state-topology-026",
       "type": "text",
-      "x": 334.0,
+      "x": 642.0,
       "y": 208.1,
       "width": 46.199999999999996,
       "height": 13.75,
@@ -912,7 +912,7 @@
     {
       "id": "all-01-steady-state-topology-027",
       "type": "ellipse",
-      "x": 491.0,
+      "x": 799.0,
       "y": 209.0,
       "width": 10.0,
       "height": 10.0,
@@ -939,7 +939,7 @@
     {
       "id": "all-01-steady-state-topology-028",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 234.0,
       "width": 200.0,
       "height": 28.0,
@@ -968,7 +968,7 @@
     {
       "id": "all-01-steady-state-topology-029",
       "type": "text",
-      "x": 334.0,
+      "x": 642.0,
       "y": 242.1,
       "width": 46.199999999999996,
       "height": 13.75,
@@ -1005,7 +1005,7 @@
     {
       "id": "all-01-steady-state-topology-030",
       "type": "ellipse",
-      "x": 491.0,
+      "x": 799.0,
       "y": 243.0,
       "width": 10.0,
       "height": 10.0,
@@ -1032,7 +1032,7 @@
     {
       "id": "all-01-steady-state-topology-031",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 274.0,
       "width": 200.0,
       "height": 44.0,
@@ -1061,7 +1061,7 @@
     {
       "id": "all-01-steady-state-topology-032",
       "type": "text",
-      "x": 334.0,
+      "x": 642.0,
       "y": 282.55,
       "width": 126.0,
       "height": 13.125,
@@ -1098,7 +1098,7 @@
     {
       "id": "all-01-steady-state-topology-033",
       "type": "rectangle",
-      "x": 616.0,
+      "x": 308.0,
       "y": 114.0,
       "width": 228.0,
       "height": 220.0,
@@ -1127,7 +1127,7 @@
     {
       "id": "all-01-steady-state-topology-034",
       "type": "text",
-      "x": 632.0,
+      "x": 324.0,
       "y": 124.5,
       "width": 63.0,
       "height": 18.75,
@@ -1164,7 +1164,7 @@
     {
       "id": "all-01-steady-state-topology-035",
       "type": "text",
-      "x": 632.0,
+      "x": 324.0,
       "y": 145.55,
       "width": 75.6,
       "height": 13.125,
@@ -1201,7 +1201,7 @@
     {
       "id": "all-01-steady-state-topology-036",
       "type": "rectangle",
-      "x": 630.0,
+      "x": 322.0,
       "y": 166.0,
       "width": 200.0,
       "height": 28.0,
@@ -1230,7 +1230,7 @@
     {
       "id": "all-01-steady-state-topology-037",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 174.1,
       "width": 46.199999999999996,
       "height": 13.75,
@@ -1267,7 +1267,7 @@
     {
       "id": "all-01-steady-state-topology-038",
       "type": "ellipse",
-      "x": 799.0,
+      "x": 491.0,
       "y": 175.0,
       "width": 10.0,
       "height": 10.0,
@@ -1294,7 +1294,7 @@
     {
       "id": "all-01-steady-state-topology-039",
       "type": "rectangle",
-      "x": 630.0,
+      "x": 322.0,
       "y": 200.0,
       "width": 200.0,
       "height": 28.0,
@@ -1323,7 +1323,7 @@
     {
       "id": "all-01-steady-state-topology-040",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 208.1,
       "width": 46.199999999999996,
       "height": 13.75,
@@ -1360,7 +1360,7 @@
     {
       "id": "all-01-steady-state-topology-041",
       "type": "ellipse",
-      "x": 799.0,
+      "x": 491.0,
       "y": 209.0,
       "width": 10.0,
       "height": 10.0,
@@ -1387,7 +1387,7 @@
     {
       "id": "all-01-steady-state-topology-042",
       "type": "rectangle",
-      "x": 630.0,
+      "x": 322.0,
       "y": 234.0,
       "width": 200.0,
       "height": 28.0,
@@ -1416,7 +1416,7 @@
     {
       "id": "all-01-steady-state-topology-043",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 242.1,
       "width": 46.199999999999996,
       "height": 13.75,
@@ -1453,7 +1453,7 @@
     {
       "id": "all-01-steady-state-topology-044",
       "type": "ellipse",
-      "x": 799.0,
+      "x": 491.0,
       "y": 243.0,
       "width": 10.0,
       "height": 10.0,
@@ -1480,7 +1480,7 @@
     {
       "id": "all-01-steady-state-topology-045",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 286.55,
       "width": 107.1,
       "height": 13.125,
@@ -1503,8 +1503,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "1 \u00d7 app per zone,",
-      "originalText": "1 \u00d7 app per zone,",
+      "text": "1 × app per zone,",
+      "originalText": "1 × app per zone,",
       "fontSize": 10.5,
       "fontFamily": 3,
       "textAlign": "left",
@@ -1517,7 +1517,7 @@
     {
       "id": "all-01-steady-state-topology-046",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 301.55,
       "width": 170.1,
       "height": 13.125,
@@ -1540,8 +1540,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "every cluster \u2192 9 endpoints",
-      "originalText": "every cluster \u2192 9 endpoints",
+      "text": "every cluster → 9 endpoints",
+      "originalText": "every cluster → 9 endpoints",
       "fontSize": 10.5,
       "fontFamily": 3,
       "textAlign": "left",
@@ -1823,8 +1823,8 @@
       "type": "line",
       "x": 180.0,
       "y": 334.0,
-      "width": 200.0,
-      "height": 37.5,
+      "width": 460.0,
+      "height": 44.0,
       "angle": 0,
       "strokeColor": "#8a6516",
       "backgroundColor": "transparent",
@@ -1852,51 +1852,51 @@
           0.0
         ],
         [
-          3.9351851851851904,
-          11.458333333333314
+          9.2,
+          12.74
         ],
         [
-          14.814814814814838,
-          20.83333333333337
+          34.5,
+          24.32
         ],
         [
-          31.25,
-          28.125
+          71.3,
+          32.42
         ],
         [
-          51.85185185185185,
-          33.33333333333337
+          119.6,
+          38.21
         ],
         [
-          75.23148148148144,
-          36.45833333333326
+          172.5,
+          41.68
         ],
         [
-          100.0,
-          37.5
+          230.0,
+          44.0
         ],
         [
-          124.76851851851853,
-          36.458333333333314
+          287.5,
+          41.68
         ],
         [
-          148.1481481481481,
-          33.333333333333314
+          340.4,
+          38.21
         ],
         [
-          168.75,
-          28.125
+          388.7,
+          32.42
         ],
         [
-          185.18518518518522,
-          20.83333333333337
+          425.5,
+          24.32
         ],
         [
-          196.06481481481484,
-          11.458333333333371
+          450.8,
+          12.74
         ],
         [
-          200.0,
+          460.0,
           0.0
         ]
       ],
@@ -2233,8 +2233,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "in west \u00b7 30 rps",
-      "originalText": "in west \u00b7 30 rps",
+      "text": "in west · 30 rps",
+      "originalText": "in west · 30 rps",
       "fontSize": 10.5,
       "fontFamily": 3,
       "textAlign": "center",
@@ -2712,8 +2712,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "9 endpoints \u2014 one logical service",
-      "originalText": "9 endpoints \u2014 one logical service",
+      "text": "9 endpoints — one logical service",
+      "originalText": "9 endpoints — one logical service",
       "fontSize": 10.5,
       "fontFamily": 3,
       "textAlign": "left",
@@ -2844,7 +2844,7 @@
     {
       "id": "all-02-steady-state-exposure-modes-016",
       "type": "text",
-      "x": 608.0,
+      "x": 736.0,
       "y": 681.0,
       "width": 24.0,
       "height": 12.5,
@@ -2881,7 +2881,7 @@
     {
       "id": "all-02-steady-state-exposure-modes-017",
       "type": "ellipse",
-      "x": 635.0,
+      "x": 763.0,
       "y": 669.0,
       "width": 10.0,
       "height": 10.0,
@@ -2908,7 +2908,7 @@
     {
       "id": "all-02-steady-state-exposure-modes-018",
       "type": "ellipse",
-      "x": 653.0,
+      "x": 781.0,
       "y": 669.0,
       "width": 10.0,
       "height": 10.0,
@@ -2935,7 +2935,7 @@
     {
       "id": "all-02-steady-state-exposure-modes-019",
       "type": "ellipse",
-      "x": 671.0,
+      "x": 799.0,
       "y": 669.0,
       "width": 10.0,
       "height": 10.0,
@@ -2962,7 +2962,7 @@
     {
       "id": "all-02-steady-state-exposure-modes-020",
       "type": "text",
-      "x": 720.0,
+      "x": 608.0,
       "y": 681.0,
       "width": 42.0,
       "height": 12.5,
@@ -2999,7 +2999,7 @@
     {
       "id": "all-02-steady-state-exposure-modes-021",
       "type": "ellipse",
-      "x": 763.0,
+      "x": 651.0,
       "y": 669.0,
       "width": 10.0,
       "height": 10.0,
@@ -3026,7 +3026,7 @@
     {
       "id": "all-02-steady-state-exposure-modes-022",
       "type": "ellipse",
-      "x": 781.0,
+      "x": 669.0,
       "y": 669.0,
       "width": 10.0,
       "height": 10.0,
@@ -3053,7 +3053,7 @@
     {
       "id": "all-02-steady-state-exposure-modes-023",
       "type": "ellipse",
-      "x": 799.0,
+      "x": 687.0,
       "y": 669.0,
       "width": 10.0,
       "height": 10.0,
@@ -3132,8 +3132,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "app-flat runs in every cluster \u2014 the mirror picks one copy",
-      "originalText": "app-flat runs in every cluster \u2014 the mirror picks one copy",
+      "text": "app-flat runs in every cluster — the mirror picks one copy",
+      "originalText": "app-flat runs in every cluster — the mirror picks one copy",
       "fontSize": 10.5,
       "fontFamily": 3,
       "textAlign": "left",
@@ -3315,8 +3315,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "east \u00b7 in use",
-      "originalText": "east \u00b7 in use",
+      "text": "east · in use",
+      "originalText": "east · in use",
       "fontSize": 10.0,
       "fontFamily": 3,
       "textAlign": "left",
@@ -3579,8 +3579,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "central \u00b7 idle spare",
-      "originalText": "central \u00b7 idle spare",
+      "text": "central · idle spare",
+      "originalText": "central · idle spare",
       "fontSize": 10.0,
       "fontFamily": 3,
       "textAlign": "left",
@@ -4559,7 +4559,7 @@
     {
       "id": "all-03-fm1-control-plane-011",
       "type": "rectangle",
-      "x": 308.0,
+      "x": 616.0,
       "y": 1172.0,
       "width": 228.0,
       "height": 148.0,
@@ -4588,7 +4588,7 @@
     {
       "id": "all-03-fm1-control-plane-012",
       "type": "text",
-      "x": 324.0,
+      "x": 632.0,
       "y": 1183.4,
       "width": 33.6,
       "height": 17.5,
@@ -4625,7 +4625,7 @@
     {
       "id": "all-03-fm1-control-plane-013",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 1208.0,
       "width": 200.0,
       "height": 30.0,
@@ -4654,7 +4654,7 @@
     {
       "id": "all-03-fm1-control-plane-014",
       "type": "ellipse",
-      "x": 491.0,
+      "x": 799.0,
       "y": 1218.0,
       "width": 10.0,
       "height": 10.0,
@@ -4681,7 +4681,7 @@
     {
       "id": "all-03-fm1-control-plane-015",
       "type": "ellipse",
-      "x": 339.0,
+      "x": 647.0,
       "y": 1263.0,
       "width": 10.0,
       "height": 10.0,
@@ -4708,7 +4708,7 @@
     {
       "id": "all-03-fm1-control-plane-016",
       "type": "ellipse",
-      "x": 361.0,
+      "x": 669.0,
       "y": 1263.0,
       "width": 10.0,
       "height": 10.0,
@@ -4735,7 +4735,7 @@
     {
       "id": "all-03-fm1-control-plane-017",
       "type": "ellipse",
-      "x": 383.0,
+      "x": 691.0,
       "y": 1263.0,
       "width": 10.0,
       "height": 10.0,
@@ -4762,7 +4762,7 @@
     {
       "id": "all-03-fm1-control-plane-018",
       "type": "line",
-      "x": 336.0,
+      "x": 644.0,
       "y": 1260.0,
       "width": 60.0,
       "height": 16.0,
@@ -4805,7 +4805,7 @@
     {
       "id": "all-03-fm1-control-plane-019",
       "type": "line",
-      "x": 396.0,
+      "x": 704.0,
       "y": 1260.0,
       "width": 60.0,
       "height": 16.0,
@@ -4848,7 +4848,7 @@
     {
       "id": "all-03-fm1-control-plane-020",
       "type": "text",
-      "x": 324.0,
+      "x": 632.0,
       "y": 1286.55,
       "width": 44.1,
       "height": 13.125,
@@ -4871,8 +4871,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "app \u2192 0",
-      "originalText": "app \u2192 0",
+      "text": "app → 0",
+      "originalText": "app → 0",
       "fontSize": 10.5,
       "fontFamily": 3,
       "textAlign": "left",
@@ -4885,7 +4885,7 @@
     {
       "id": "all-03-fm1-control-plane-021",
       "type": "rectangle",
-      "x": 616.0,
+      "x": 308.0,
       "y": 1172.0,
       "width": 228.0,
       "height": 148.0,
@@ -4914,7 +4914,7 @@
     {
       "id": "all-03-fm1-control-plane-022",
       "type": "text",
-      "x": 632.0,
+      "x": 324.0,
       "y": 1183.4,
       "width": 58.8,
       "height": 17.5,
@@ -4951,7 +4951,7 @@
     {
       "id": "all-03-fm1-control-plane-023",
       "type": "rectangle",
-      "x": 630.0,
+      "x": 322.0,
       "y": 1208.0,
       "width": 200.0,
       "height": 30.0,
@@ -4980,7 +4980,7 @@
     {
       "id": "all-03-fm1-control-plane-024",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 1217.55,
       "width": 163.79999999999998,
       "height": 13.125,
@@ -5003,8 +5003,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "destination \u00b7 identity \u2192 0",
-      "originalText": "destination \u00b7 identity \u2192 0",
+      "text": "destination · identity → 0",
+      "originalText": "destination · identity → 0",
       "fontSize": 10.5,
       "fontFamily": 3,
       "textAlign": "left",
@@ -5017,7 +5017,7 @@
     {
       "id": "all-03-fm1-control-plane-025",
       "type": "line",
-      "x": 806.0,
+      "x": 498.0,
       "y": 1216.0,
       "width": 16.0,
       "height": 14.0,
@@ -5060,7 +5060,7 @@
     {
       "id": "all-03-fm1-control-plane-026",
       "type": "line",
-      "x": 822.0,
+      "x": 514.0,
       "y": 1216.0,
       "width": 16.0,
       "height": 14.0,
@@ -5103,7 +5103,7 @@
     {
       "id": "all-03-fm1-control-plane-027",
       "type": "ellipse",
-      "x": 647.0,
+      "x": 339.0,
       "y": 1263.0,
       "width": 10.0,
       "height": 10.0,
@@ -5130,7 +5130,7 @@
     {
       "id": "all-03-fm1-control-plane-028",
       "type": "ellipse",
-      "x": 669.0,
+      "x": 361.0,
       "y": 1263.0,
       "width": 10.0,
       "height": 10.0,
@@ -5157,7 +5157,7 @@
     {
       "id": "all-03-fm1-control-plane-029",
       "type": "ellipse",
-      "x": 691.0,
+      "x": 383.0,
       "y": 1263.0,
       "width": 10.0,
       "height": 10.0,
@@ -5589,7 +5589,7 @@
     {
       "id": "all-04-fm2-cluster-009",
       "type": "rectangle",
-      "x": 308.0,
+      "x": 616.0,
       "y": 1512.0,
       "width": 228.0,
       "height": 104.0,
@@ -5618,7 +5618,7 @@
     {
       "id": "all-04-fm2-cluster-010",
       "type": "text",
-      "x": 324.0,
+      "x": 632.0,
       "y": 1523.4,
       "width": 33.6,
       "height": 17.5,
@@ -5655,7 +5655,7 @@
     {
       "id": "all-04-fm2-cluster-011",
       "type": "ellipse",
-      "x": 339.0,
+      "x": 647.0,
       "y": 1567.0,
       "width": 10.0,
       "height": 10.0,
@@ -5682,7 +5682,7 @@
     {
       "id": "all-04-fm2-cluster-012",
       "type": "ellipse",
-      "x": 361.0,
+      "x": 669.0,
       "y": 1567.0,
       "width": 10.0,
       "height": 10.0,
@@ -5709,7 +5709,7 @@
     {
       "id": "all-04-fm2-cluster-013",
       "type": "ellipse",
-      "x": 383.0,
+      "x": 691.0,
       "y": 1567.0,
       "width": 10.0,
       "height": 10.0,
@@ -5736,7 +5736,7 @@
     {
       "id": "all-04-fm2-cluster-014",
       "type": "line",
-      "x": 330.0,
+      "x": 638.0,
       "y": 1520.0,
       "width": 190.0,
       "height": 88.0,
@@ -5779,7 +5779,7 @@
     {
       "id": "all-04-fm2-cluster-015",
       "type": "line",
-      "x": 520.0,
+      "x": 828.0,
       "y": 1520.0,
       "width": 190.0,
       "height": 88.0,
@@ -5822,7 +5822,7 @@
     {
       "id": "all-04-fm2-cluster-016",
       "type": "text",
-      "x": 324.0,
+      "x": 632.0,
       "y": 1594.55,
       "width": 119.69999999999999,
       "height": 13.125,
@@ -5859,7 +5859,7 @@
     {
       "id": "all-04-fm2-cluster-017",
       "type": "rectangle",
-      "x": 616.0,
+      "x": 308.0,
       "y": 1512.0,
       "width": 228.0,
       "height": 104.0,
@@ -5888,7 +5888,7 @@
     {
       "id": "all-04-fm2-cluster-018",
       "type": "text",
-      "x": 632.0,
+      "x": 324.0,
       "y": 1523.4,
       "width": 58.8,
       "height": 17.5,
@@ -5925,7 +5925,7 @@
     {
       "id": "all-04-fm2-cluster-019",
       "type": "ellipse",
-      "x": 647.0,
+      "x": 339.0,
       "y": 1567.0,
       "width": 10.0,
       "height": 10.0,
@@ -5952,7 +5952,7 @@
     {
       "id": "all-04-fm2-cluster-020",
       "type": "ellipse",
-      "x": 669.0,
+      "x": 361.0,
       "y": 1567.0,
       "width": 10.0,
       "height": 10.0,
@@ -5979,7 +5979,7 @@
     {
       "id": "all-04-fm2-cluster-021",
       "type": "ellipse",
-      "x": 691.0,
+      "x": 383.0,
       "y": 1567.0,
       "width": 10.0,
       "height": 10.0,
@@ -6609,7 +6609,7 @@
     {
       "id": "all-05-fm3-zone-brownout-015",
       "type": "rectangle",
-      "x": 308.0,
+      "x": 616.0,
       "y": 1808.0,
       "width": 228.0,
       "height": 160.0,
@@ -6638,7 +6638,7 @@
     {
       "id": "all-05-fm3-zone-brownout-016",
       "type": "text",
-      "x": 324.0,
+      "x": 632.0,
       "y": 1819.4,
       "width": 33.6,
       "height": 17.5,
@@ -6675,7 +6675,7 @@
     {
       "id": "all-05-fm3-zone-brownout-017",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 1844.0,
       "width": 200.0,
       "height": 26.0,
@@ -6704,7 +6704,7 @@
     {
       "id": "all-05-fm3-zone-brownout-018",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 1844.0,
       "width": 200.0,
       "height": 26.0,
@@ -6733,7 +6733,7 @@
     {
       "id": "all-05-fm3-zone-brownout-019",
       "type": "text",
-      "x": 334.0,
+      "x": 642.0,
       "y": 1851.55,
       "width": 94.5,
       "height": 13.125,
@@ -6770,7 +6770,7 @@
     {
       "id": "all-05-fm3-zone-brownout-020",
       "type": "ellipse",
-      "x": 491.0,
+      "x": 799.0,
       "y": 1852.0,
       "width": 10.0,
       "height": 10.0,
@@ -6797,7 +6797,7 @@
     {
       "id": "all-05-fm3-zone-brownout-021",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 1876.0,
       "width": 200.0,
       "height": 26.0,
@@ -6826,7 +6826,7 @@
     {
       "id": "all-05-fm3-zone-brownout-022",
       "type": "text",
-      "x": 334.0,
+      "x": 642.0,
       "y": 1883.55,
       "width": 44.1,
       "height": 13.125,
@@ -6863,7 +6863,7 @@
     {
       "id": "all-05-fm3-zone-brownout-023",
       "type": "ellipse",
-      "x": 491.0,
+      "x": 799.0,
       "y": 1884.0,
       "width": 10.0,
       "height": 10.0,
@@ -6890,7 +6890,7 @@
     {
       "id": "all-05-fm3-zone-brownout-024",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 1908.0,
       "width": 200.0,
       "height": 26.0,
@@ -6919,7 +6919,7 @@
     {
       "id": "all-05-fm3-zone-brownout-025",
       "type": "text",
-      "x": 334.0,
+      "x": 642.0,
       "y": 1915.55,
       "width": 44.1,
       "height": 13.125,
@@ -6956,7 +6956,7 @@
     {
       "id": "all-05-fm3-zone-brownout-026",
       "type": "ellipse",
-      "x": 491.0,
+      "x": 799.0,
       "y": 1916.0,
       "width": 10.0,
       "height": 10.0,
@@ -6983,7 +6983,7 @@
     {
       "id": "all-05-fm3-zone-brownout-027",
       "type": "rectangle",
-      "x": 616.0,
+      "x": 308.0,
       "y": 1808.0,
       "width": 228.0,
       "height": 160.0,
@@ -7012,7 +7012,7 @@
     {
       "id": "all-05-fm3-zone-brownout-028",
       "type": "text",
-      "x": 632.0,
+      "x": 324.0,
       "y": 1819.4,
       "width": 58.8,
       "height": 17.5,
@@ -7049,7 +7049,7 @@
     {
       "id": "all-05-fm3-zone-brownout-029",
       "type": "rectangle",
-      "x": 630.0,
+      "x": 322.0,
       "y": 1844.0,
       "width": 200.0,
       "height": 26.0,
@@ -7078,7 +7078,7 @@
     {
       "id": "all-05-fm3-zone-brownout-030",
       "type": "rectangle",
-      "x": 630.0,
+      "x": 322.0,
       "y": 1844.0,
       "width": 200.0,
       "height": 26.0,
@@ -7107,7 +7107,7 @@
     {
       "id": "all-05-fm3-zone-brownout-031",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 1851.55,
       "width": 94.5,
       "height": 13.125,
@@ -7144,7 +7144,7 @@
     {
       "id": "all-05-fm3-zone-brownout-032",
       "type": "ellipse",
-      "x": 799.0,
+      "x": 491.0,
       "y": 1852.0,
       "width": 10.0,
       "height": 10.0,
@@ -7171,7 +7171,7 @@
     {
       "id": "all-05-fm3-zone-brownout-033",
       "type": "rectangle",
-      "x": 630.0,
+      "x": 322.0,
       "y": 1876.0,
       "width": 200.0,
       "height": 26.0,
@@ -7200,7 +7200,7 @@
     {
       "id": "all-05-fm3-zone-brownout-034",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 1883.55,
       "width": 44.1,
       "height": 13.125,
@@ -7237,7 +7237,7 @@
     {
       "id": "all-05-fm3-zone-brownout-035",
       "type": "ellipse",
-      "x": 799.0,
+      "x": 491.0,
       "y": 1884.0,
       "width": 10.0,
       "height": 10.0,
@@ -7264,7 +7264,7 @@
     {
       "id": "all-05-fm3-zone-brownout-036",
       "type": "rectangle",
-      "x": 630.0,
+      "x": 322.0,
       "y": 1908.0,
       "width": 200.0,
       "height": 26.0,
@@ -7293,7 +7293,7 @@
     {
       "id": "all-05-fm3-zone-brownout-037",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 1915.55,
       "width": 44.1,
       "height": 13.125,
@@ -7330,7 +7330,7 @@
     {
       "id": "all-05-fm3-zone-brownout-038",
       "type": "ellipse",
-      "x": 799.0,
+      "x": 491.0,
       "y": 1916.0,
       "width": 10.0,
       "height": 10.0,
@@ -7673,7 +7673,7 @@
     {
       "id": "all-06-fm4-region-009",
       "type": "rectangle",
-      "x": 308.0,
+      "x": 616.0,
       "y": 2160.0,
       "width": 228.0,
       "height": 148.0,
@@ -7702,7 +7702,7 @@
     {
       "id": "all-06-fm4-region-010",
       "type": "text",
-      "x": 324.0,
+      "x": 632.0,
       "y": 2171.4,
       "width": 33.6,
       "height": 17.5,
@@ -7739,7 +7739,7 @@
     {
       "id": "all-06-fm4-region-011",
       "type": "ellipse",
-      "x": 339.0,
+      "x": 647.0,
       "y": 2211.0,
       "width": 10.0,
       "height": 10.0,
@@ -7766,7 +7766,7 @@
     {
       "id": "all-06-fm4-region-012",
       "type": "ellipse",
-      "x": 361.0,
+      "x": 669.0,
       "y": 2211.0,
       "width": 10.0,
       "height": 10.0,
@@ -7793,7 +7793,7 @@
     {
       "id": "all-06-fm4-region-013",
       "type": "ellipse",
-      "x": 383.0,
+      "x": 691.0,
       "y": 2211.0,
       "width": 10.0,
       "height": 10.0,
@@ -7820,7 +7820,7 @@
     {
       "id": "all-06-fm4-region-014",
       "type": "line",
-      "x": 330.0,
+      "x": 638.0,
       "y": 2168.0,
       "width": 190.0,
       "height": 132.0,
@@ -7863,7 +7863,7 @@
     {
       "id": "all-06-fm4-region-015",
       "type": "line",
-      "x": 520.0,
+      "x": 828.0,
       "y": 2168.0,
       "width": 190.0,
       "height": 132.0,
@@ -7906,7 +7906,7 @@
     {
       "id": "all-06-fm4-region-016",
       "type": "rectangle",
-      "x": 616.0,
+      "x": 308.0,
       "y": 2160.0,
       "width": 228.0,
       "height": 148.0,
@@ -7935,7 +7935,7 @@
     {
       "id": "all-06-fm4-region-017",
       "type": "text",
-      "x": 632.0,
+      "x": 324.0,
       "y": 2171.4,
       "width": 58.8,
       "height": 17.5,
@@ -7972,7 +7972,7 @@
     {
       "id": "all-06-fm4-region-018",
       "type": "ellipse",
-      "x": 647.0,
+      "x": 339.0,
       "y": 2211.0,
       "width": 10.0,
       "height": 10.0,
@@ -7999,7 +7999,7 @@
     {
       "id": "all-06-fm4-region-019",
       "type": "ellipse",
-      "x": 669.0,
+      "x": 361.0,
       "y": 2211.0,
       "width": 10.0,
       "height": 10.0,
@@ -8026,7 +8026,7 @@
     {
       "id": "all-06-fm4-region-020",
       "type": "ellipse",
-      "x": 691.0,
+      "x": 383.0,
       "y": 2211.0,
       "width": 10.0,
       "height": 10.0,
@@ -8053,7 +8053,7 @@
     {
       "id": "all-06-fm4-region-021",
       "type": "line",
-      "x": 628.0,
+      "x": 320.0,
       "y": 2168.0,
       "width": 200.0,
       "height": 132.0,
@@ -8096,7 +8096,7 @@
     {
       "id": "all-06-fm4-region-022",
       "type": "line",
-      "x": 828.0,
+      "x": 520.0,
       "y": 2168.0,
       "width": 200.0,
       "height": 132.0,
@@ -8737,8 +8737,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "east + central",
-      "originalText": "east + central",
+      "text": "central + east",
+      "originalText": "central + east",
       "fontSize": 9.5,
       "fontFamily": 3,
       "textAlign": "center",

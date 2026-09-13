@@ -483,7 +483,7 @@
     {
       "id": "05-fm3-zone-brownout-015",
       "type": "rectangle",
-      "x": 308.0,
+      "x": 616.0,
       "y": 44.0,
       "width": 228.0,
       "height": 160.0,
@@ -512,7 +512,7 @@
     {
       "id": "05-fm3-zone-brownout-016",
       "type": "text",
-      "x": 324.0,
+      "x": 632.0,
       "y": 55.4,
       "width": 33.6,
       "height": 17.5,
@@ -549,7 +549,7 @@
     {
       "id": "05-fm3-zone-brownout-017",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 80.0,
       "width": 200.0,
       "height": 26.0,
@@ -578,7 +578,7 @@
     {
       "id": "05-fm3-zone-brownout-018",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 80.0,
       "width": 200.0,
       "height": 26.0,
@@ -607,7 +607,7 @@
     {
       "id": "05-fm3-zone-brownout-019",
       "type": "text",
-      "x": 334.0,
+      "x": 642.0,
       "y": 87.55,
       "width": 94.5,
       "height": 13.125,
@@ -644,7 +644,7 @@
     {
       "id": "05-fm3-zone-brownout-020",
       "type": "ellipse",
-      "x": 491.0,
+      "x": 799.0,
       "y": 88.0,
       "width": 10.0,
       "height": 10.0,
@@ -671,7 +671,7 @@
     {
       "id": "05-fm3-zone-brownout-021",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 112.0,
       "width": 200.0,
       "height": 26.0,
@@ -700,7 +700,7 @@
     {
       "id": "05-fm3-zone-brownout-022",
       "type": "text",
-      "x": 334.0,
+      "x": 642.0,
       "y": 119.55,
       "width": 44.1,
       "height": 13.125,
@@ -737,7 +737,7 @@
     {
       "id": "05-fm3-zone-brownout-023",
       "type": "ellipse",
-      "x": 491.0,
+      "x": 799.0,
       "y": 120.0,
       "width": 10.0,
       "height": 10.0,
@@ -764,7 +764,7 @@
     {
       "id": "05-fm3-zone-brownout-024",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 144.0,
       "width": 200.0,
       "height": 26.0,
@@ -793,7 +793,7 @@
     {
       "id": "05-fm3-zone-brownout-025",
       "type": "text",
-      "x": 334.0,
+      "x": 642.0,
       "y": 151.55,
       "width": 44.1,
       "height": 13.125,
@@ -830,7 +830,7 @@
     {
       "id": "05-fm3-zone-brownout-026",
       "type": "ellipse",
-      "x": 491.0,
+      "x": 799.0,
       "y": 152.0,
       "width": 10.0,
       "height": 10.0,
@@ -857,7 +857,7 @@
     {
       "id": "05-fm3-zone-brownout-027",
       "type": "rectangle",
-      "x": 616.0,
+      "x": 308.0,
       "y": 44.0,
       "width": 228.0,
       "height": 160.0,
@@ -886,7 +886,7 @@
     {
       "id": "05-fm3-zone-brownout-028",
       "type": "text",
-      "x": 632.0,
+      "x": 324.0,
       "y": 55.4,
       "width": 58.8,
       "height": 17.5,
@@ -923,7 +923,7 @@
     {
       "id": "05-fm3-zone-brownout-029",
       "type": "rectangle",
-      "x": 630.0,
+      "x": 322.0,
       "y": 80.0,
       "width": 200.0,
       "height": 26.0,
@@ -952,7 +952,7 @@
     {
       "id": "05-fm3-zone-brownout-030",
       "type": "rectangle",
-      "x": 630.0,
+      "x": 322.0,
       "y": 80.0,
       "width": 200.0,
       "height": 26.0,
@@ -981,7 +981,7 @@
     {
       "id": "05-fm3-zone-brownout-031",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 87.55,
       "width": 94.5,
       "height": 13.125,
@@ -1018,7 +1018,7 @@
     {
       "id": "05-fm3-zone-brownout-032",
       "type": "ellipse",
-      "x": 799.0,
+      "x": 491.0,
       "y": 88.0,
       "width": 10.0,
       "height": 10.0,
@@ -1045,7 +1045,7 @@
     {
       "id": "05-fm3-zone-brownout-033",
       "type": "rectangle",
-      "x": 630.0,
+      "x": 322.0,
       "y": 112.0,
       "width": 200.0,
       "height": 26.0,
@@ -1074,7 +1074,7 @@
     {
       "id": "05-fm3-zone-brownout-034",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 119.55,
       "width": 44.1,
       "height": 13.125,
@@ -1111,7 +1111,7 @@
     {
       "id": "05-fm3-zone-brownout-035",
       "type": "ellipse",
-      "x": 799.0,
+      "x": 491.0,
       "y": 120.0,
       "width": 10.0,
       "height": 10.0,
@@ -1138,7 +1138,7 @@
     {
       "id": "05-fm3-zone-brownout-036",
       "type": "rectangle",
-      "x": 630.0,
+      "x": 322.0,
       "y": 144.0,
       "width": 200.0,
       "height": 26.0,
@@ -1167,7 +1167,7 @@
     {
       "id": "05-fm3-zone-brownout-037",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 151.55,
       "width": 44.1,
       "height": 13.125,
@@ -1204,7 +1204,7 @@
     {
       "id": "05-fm3-zone-brownout-038",
       "type": "ellipse",
-      "x": 799.0,
+      "x": 491.0,
       "y": 152.0,
       "width": 10.0,
       "height": 10.0,

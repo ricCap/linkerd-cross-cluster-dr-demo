@@ -29,11 +29,6 @@ labels, each experiment's target, and which cluster each is observed from. FM3
 slows `zone-a1` in region-a and leaves west alone, which is what the brownout
 now does.
 
-**One known discrepancy: the clusters are drawn west → east → central.**
-Presentation order in the code is west → **central** → east — `CLUSTER_TABLE`
-row order, which `clusters()` and the README table follow, and which the charts
-read directly so that ordering is fixed at the source rather than at the
-drawing. The diagrams are the last place still using the old order. It is
-cosmetic, and it is a column swap best done by hand: the arrows in `01` and `02`
-carry explicit point geometry rather than element bindings, so moving the boxes
-alone would leave them pointing at where the boxes used to be.
+Ordering follows [`CHARTS.md`](../CHARTS.md): clusters read **west → central →
+east**, with the region boundaries drawn around them. `07` lists FM4's target as
+`central + east` for the same reason.

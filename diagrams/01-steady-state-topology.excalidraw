@@ -124,8 +124,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "region-a \u2014 two clusters",
-      "originalText": "region-a \u2014 two clusters",
+      "text": "region-a — two clusters",
+      "originalText": "region-a — two clusters",
       "fontSize": 11.0,
       "fontFamily": 3,
       "textAlign": "left",
@@ -613,7 +613,7 @@
     {
       "id": "01-steady-state-topology-019",
       "type": "rectangle",
-      "x": 308.0,
+      "x": 616.0,
       "y": 66.0,
       "width": 228.0,
       "height": 220.0,
@@ -642,7 +642,7 @@
     {
       "id": "01-steady-state-topology-020",
       "type": "text",
-      "x": 324.0,
+      "x": 632.0,
       "y": 76.5,
       "width": 36.0,
       "height": 18.75,
@@ -679,7 +679,7 @@
     {
       "id": "01-steady-state-topology-021",
       "type": "text",
-      "x": 324.0,
+      "x": 632.0,
       "y": 97.55,
       "width": 75.6,
       "height": 13.125,
@@ -716,7 +716,7 @@
     {
       "id": "01-steady-state-topology-022",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 118.0,
       "width": 200.0,
       "height": 28.0,
@@ -745,7 +745,7 @@
     {
       "id": "01-steady-state-topology-023",
       "type": "text",
-      "x": 334.0,
+      "x": 642.0,
       "y": 126.1,
       "width": 46.199999999999996,
       "height": 13.75,
@@ -782,7 +782,7 @@
     {
       "id": "01-steady-state-topology-024",
       "type": "ellipse",
-      "x": 491.0,
+      "x": 799.0,
       "y": 127.0,
       "width": 10.0,
       "height": 10.0,
@@ -809,7 +809,7 @@
     {
       "id": "01-steady-state-topology-025",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 152.0,
       "width": 200.0,
       "height": 28.0,
@@ -838,7 +838,7 @@
     {
       "id": "01-steady-state-topology-026",
       "type": "text",
-      "x": 334.0,
+      "x": 642.0,
       "y": 160.1,
       "width": 46.199999999999996,
       "height": 13.75,
@@ -875,7 +875,7 @@
     {
       "id": "01-steady-state-topology-027",
       "type": "ellipse",
-      "x": 491.0,
+      "x": 799.0,
       "y": 161.0,
       "width": 10.0,
       "height": 10.0,
@@ -902,7 +902,7 @@
     {
       "id": "01-steady-state-topology-028",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 186.0,
       "width": 200.0,
       "height": 28.0,
@@ -931,7 +931,7 @@
     {
       "id": "01-steady-state-topology-029",
       "type": "text",
-      "x": 334.0,
+      "x": 642.0,
       "y": 194.1,
       "width": 46.199999999999996,
       "height": 13.75,
@@ -968,7 +968,7 @@
     {
       "id": "01-steady-state-topology-030",
       "type": "ellipse",
-      "x": 491.0,
+      "x": 799.0,
       "y": 195.0,
       "width": 10.0,
       "height": 10.0,
@@ -995,7 +995,7 @@
     {
       "id": "01-steady-state-topology-031",
       "type": "rectangle",
-      "x": 322.0,
+      "x": 630.0,
       "y": 226.0,
       "width": 200.0,
       "height": 44.0,
@@ -1024,7 +1024,7 @@
     {
       "id": "01-steady-state-topology-032",
       "type": "text",
-      "x": 334.0,
+      "x": 642.0,
       "y": 234.55,
       "width": 126.0,
       "height": 13.125,
@@ -1061,7 +1061,7 @@
     {
       "id": "01-steady-state-topology-033",
       "type": "rectangle",
-      "x": 616.0,
+      "x": 308.0,
       "y": 66.0,
       "width": 228.0,
       "height": 220.0,
@@ -1090,7 +1090,7 @@
     {
       "id": "01-steady-state-topology-034",
       "type": "text",
-      "x": 632.0,
+      "x": 324.0,
       "y": 76.5,
       "width": 63.0,
       "height": 18.75,
@@ -1127,7 +1127,7 @@
     {
       "id": "01-steady-state-topology-035",
       "type": "text",
-      "x": 632.0,
+      "x": 324.0,
       "y": 97.55,
       "width": 75.6,
       "height": 13.125,
@@ -1164,7 +1164,7 @@
     {
       "id": "01-steady-state-topology-036",
       "type": "rectangle",
-      "x": 630.0,
+      "x": 322.0,
       "y": 118.0,
       "width": 200.0,
       "height": 28.0,
@@ -1193,7 +1193,7 @@
     {
       "id": "01-steady-state-topology-037",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 126.1,
       "width": 46.199999999999996,
       "height": 13.75,
@@ -1230,7 +1230,7 @@
     {
       "id": "01-steady-state-topology-038",
       "type": "ellipse",
-      "x": 799.0,
+      "x": 491.0,
       "y": 127.0,
       "width": 10.0,
       "height": 10.0,
@@ -1257,7 +1257,7 @@
     {
       "id": "01-steady-state-topology-039",
       "type": "rectangle",
-      "x": 630.0,
+      "x": 322.0,
       "y": 152.0,
       "width": 200.0,
       "height": 28.0,
@@ -1286,7 +1286,7 @@
     {
       "id": "01-steady-state-topology-040",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 160.1,
       "width": 46.199999999999996,
       "height": 13.75,
@@ -1323,7 +1323,7 @@
     {
       "id": "01-steady-state-topology-041",
       "type": "ellipse",
-      "x": 799.0,
+      "x": 491.0,
       "y": 161.0,
       "width": 10.0,
       "height": 10.0,
@@ -1350,7 +1350,7 @@
     {
       "id": "01-steady-state-topology-042",
       "type": "rectangle",
-      "x": 630.0,
+      "x": 322.0,
       "y": 186.0,
       "width": 200.0,
       "height": 28.0,
@@ -1379,7 +1379,7 @@
     {
       "id": "01-steady-state-topology-043",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 194.1,
       "width": 46.199999999999996,
       "height": 13.75,
@@ -1416,7 +1416,7 @@
     {
       "id": "01-steady-state-topology-044",
       "type": "ellipse",
-      "x": 799.0,
+      "x": 491.0,
       "y": 195.0,
       "width": 10.0,
       "height": 10.0,
@@ -1443,7 +1443,7 @@
     {
       "id": "01-steady-state-topology-045",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 238.55,
       "width": 107.1,
       "height": 13.125,
@@ -1466,8 +1466,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "1 \u00d7 app per zone,",
-      "originalText": "1 \u00d7 app per zone,",
+      "text": "1 × app per zone,",
+      "originalText": "1 × app per zone,",
       "fontSize": 10.5,
       "fontFamily": 3,
       "textAlign": "left",
@@ -1480,7 +1480,7 @@
     {
       "id": "01-steady-state-topology-046",
       "type": "text",
-      "x": 642.0,
+      "x": 334.0,
       "y": 253.55,
       "width": 170.1,
       "height": 13.125,
@@ -1503,8 +1503,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "every cluster \u2192 9 endpoints",
-      "originalText": "every cluster \u2192 9 endpoints",
+      "text": "every cluster → 9 endpoints",
+      "originalText": "every cluster → 9 endpoints",
       "fontSize": 10.5,
       "fontFamily": 3,
       "textAlign": "left",
@@ -1786,8 +1786,8 @@
       "type": "line",
       "x": 180.0,
       "y": 286.0,
-      "width": 200.0,
-      "height": 37.5,
+      "width": 460.0,
+      "height": 44.0,
       "angle": 0,
       "strokeColor": "#8a6516",
       "backgroundColor": "transparent",
@@ -1815,51 +1815,51 @@
           0.0
         ],
         [
-          3.9351851851851904,
-          11.458333333333314
+          9.2,
+          12.74
         ],
         [
-          14.814814814814838,
-          20.83333333333337
+          34.5,
+          24.32
         ],
         [
-          31.25,
-          28.125
+          71.3,
+          32.42
         ],
         [
-          51.85185185185185,
-          33.33333333333337
+          119.6,
+          38.21
         ],
         [
-          75.23148148148144,
-          36.45833333333326
+          172.5,
+          41.68
         ],
         [
-          100.0,
-          37.5
+          230.0,
+          44.0
         ],
         [
-          124.76851851851853,
-          36.458333333333314
+          287.5,
+          41.68
         ],
         [
-          148.1481481481481,
-          33.333333333333314
+          340.4,
+          38.21
         ],
         [
-          168.75,
-          28.125
+          388.7,
+          32.42
         ],
         [
-          185.18518518518522,
-          20.83333333333337
+          425.5,
+          24.32
         ],
         [
-          196.06481481481484,
-          11.458333333333371
+          450.8,
+          12.74
         ],
         [
-          200.0,
+          460.0,
           0.0
         ]
       ],

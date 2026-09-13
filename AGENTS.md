@@ -37,6 +37,7 @@ Config is environment: `PROFILE=default|production`, `LINKERD_FLAVOR=oss|bel`
 | `results/FINDINGS.md` | what each failure mode actually did. |
 | `results/SHORTCOMINGS.md` | an honest audit of what the experiments do *not* establish. Read it before asserting anything. |
 | `viz/`, Grafana | **lenses, not gates.** Never assert on them, and never quote a number from them that a runner disagrees with. |
+| `CHARTS.md` | how anything that draws clusters, regions or zones orders them. Applies to Grafana panels, the status page and `diagrams/` alike. |
 
 `grafana/README.md` covers opening the dashboard and reading it.
 
