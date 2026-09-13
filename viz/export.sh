@@ -389,7 +389,7 @@ topology_json() {
   done
   printf '],"zones":['
   first=1
-  for src in $ZONES; do
+  for src in $(all_zones); do
     [ "$first" = 1 ] || printf ','
     printf '"%s"' "$src"
     first=0

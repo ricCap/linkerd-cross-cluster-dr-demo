@@ -43,46 +43,57 @@ export REPO_ROOT
 #
 # Pod and service CIDRs must not overlap across clusters: on a flat network a
 # pod IP has to be globally unambiguous or cross-cluster routing is impossible.
+# Row order is presentation order -- west, central, east, the way the charts
+# and every log line read. The CIDR columns are keyed by cluster NAME, not by
+# position, so they are deliberately not left in ascending order here: east
+# keeps 10.22 and central keeps 10.23, which is what the recorded runs under
+# results/ and docs/feeds/ were measured against.
 CLUSTER_TABLE="
 west:region-b:10.21.0.0/16:10.245.0.0/16
-east:region-a:10.22.0.0/16:10.246.0.0/16
 central:region-a:10.23.0.0/16:10.247.0.0/16
+east:region-a:10.22.0.0/16:10.246.0.0/16
 "
 
 # --- zones ------------------------------------------------------------------
 #
-# Zones map onto nodes one-to-one: server-0 takes the first zone, then one agent
-# per additional zone. The server is left schedulable rather than tainted, which
-# saves a container per cluster.
+# ZONES ARE REGION-SCOPED, AND THAT IS NOT A COSMETIC DETAIL.
 #
-# HOW MANY ZONES DO YOU ACTUALLY NEED?
+# `us-east-1a` and `us-west-2a` are unrelated failure domains that happen to
+# share a letter. Every cluster here used to label its nodes zone-a/zone-b/
+# zone-c, so west's `zone-c` and east's `zone-c` were the SAME STRING to the
+# proxy -- describing a zone that spans two regions, which does not exist.
 #
-# Only FM3 depends on zones at all -- FM1, FM2 and FM4 operate at control-plane,
-# cluster and region level.
+# It mattered well beyond naming. `dst_zone_locality` is computed by comparing
+# those labels, so cross-REGION traffic was being reported as zone-local, and
+# FM3's resting measurement -- "HAZL used 3 of 9 endpoints, the same-zone pod in
+# each of the three clusters, all local" -- rested on the duplication. With
+# region-scoped names a west client has no zone-local endpoint in region-a at
+# all, and that finding needs re-measuring. See results/SHORTCOMINGS.md §16.
 #
-#   3 zones (default)  matches the standard cloud topology, and a zone brownout
-#                      costs 33% of a cluster, which is the realistic failure.
-#                      Leaves two zones for HAZL to expand into, so the
-#                      "adds the minimum, not everything" behaviour is visible
-#                      with room to spare. 9 node containers.
-#
-#   2 zones            6 node containers. FM3 still works: HAZL still prefers
-#                      in-zone and still widens under load. But a brownout now
-#                      costs 50% of the cluster, and there is only one zone to
-#                      expand into, so incremental widening is less legible.
-#                      Pick this on a small machine.
-#
-# Note this does NOT change the HAZL load band. The band scales with ACTIVE
-# endpoints, and at rest that is one per cluster (the client's own zone), so it
-# tracks cluster count rather than zone count.
-#
-# It DOES change the federated pool: at two zones the baseline is 6 endpoints,
-# not 9. Nothing needs updating for that -- federated_pool_size() derives it and
-# the runners assert against the derived value -- but any number you quote from
-# a run has to say which zone count produced it.
-ZONES="${ZONES:-zone-a zone-b zone-c}"
+# Names are `zone-<region letter><n>`: zone-a1..a3 in region-a, zone-b1..b3 in
+# region-b. Two clusters in ONE region genuinely can sit in the same zones, so
+# east and central still share theirs -- that part was always right.
+ZONES_PER_REGION="${ZONES_PER_REGION:-3}"
 
-zone_count() { echo "$ZONES" | wc -w | tr -d ' '; }
+# The zones of a region, one per line.  region-a -> zone-a1 zone-a2 zone-a3
+zones_in_region() {
+  local letter="${1##*-}" n=1
+  while [ "$n" -le "$ZONES_PER_REGION" ]; do
+    printf 'zone-%s%s\n' "$letter" "$n"
+    n=$(( n + 1 ))
+  done
+}
+
+# The zones a given cluster's nodes live in.
+zones_for() { zones_in_region "$(cluster_region "$1")"; }
+
+# Every distinct zone in the mesh, across all regions.
+all_zones() {
+  local r
+  for r in $(regions); do zones_in_region "$r"; done
+}
+
+zone_count() { echo "$ZONES_PER_REGION"; }
 
 # Replicas per workload. One pod per zone, so each zone holds exactly one
 # endpoint -- which is what makes the endpoint arithmetic in the experiments
@@ -279,6 +290,15 @@ all_cluster_networks() {
     out="${out}$(cluster_pod_cidr "$c"),$(cluster_svc_cidr "$c"),"
   done
   echo "${out%,}"
+}
+
+# Every distinct region in the topology table, sorted -- region-a before
+# region-b. Declaration order cannot give that: west is deliberately the first
+# row (it is the observer, and no experiment may touch it) and west is the one
+# cluster in region-b. Charts read this through all_zones(), so sorting here is
+# what puts region-a's zones first.
+regions() {
+  echo "$CLUSTER_TABLE" | grep -v '^[[:space:]]*$' | cut -d: -f2 | sort -u
 }
 
 # Clusters belonging to a region -- used by the FM4 region-loss experiment.
