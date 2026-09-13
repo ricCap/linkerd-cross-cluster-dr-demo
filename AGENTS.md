@@ -129,6 +129,7 @@ clusters/   00..12 build steps, 99 teardown; lib.sh holds the topology table
 verify/     hard gates (non-zero exit); lib.sh holds measurement helpers
 chaos/      failure-mode manifests and scripts
 grafana/    dr-dashboard.json, alert-rules.yml, archive-stack.sh, README.md
+diagrams/   excalidraw scenes — the editable source for the write-up's figures
 load/       k6 scripts
 viz/        status page over a snapshot feed; build.sh bundles runs into docs/
 docs/       generated, committed — the published replay site
