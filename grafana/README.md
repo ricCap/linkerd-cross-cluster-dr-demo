@@ -151,10 +151,18 @@ A dying cluster's line falls to zero while the survivors absorb its share.
 Linkerd emits no cluster label for remote-discovery endpoints, so destination is
 derived from the pod CIDRs (`10.21`=west, `10.22`=east, `10.23`=central).
 
-Zone locality is a **cost** chart. On open source, ~1/3 local is correct and
-expected, not a bug: Linkerd balances zone-agnostically across all 9 federated
-endpoints and 3 of them sit in the client's zone. The other two thirds are
-cross-AZ egress you are paying for.
+Zone locality is a **cost** chart, and on open source nearly all of it is
+expected to be cross-zone, not a bug: Linkerd balances zone-agnostically across
+all 9 federated endpoints, and zones are region-scoped (`zone-a1..a3` in
+region-a, `zone-b1..b3` in region-b), so a west client has exactly one
+zone-local endpoint of the nine. The rest is cross-AZ egress you are paying for.
+
+Do not quote a resting figure off this panel yet. It read ~1/3 local until
+recently, and that was an artifact: every cluster labelled its nodes
+`zone-a`/`zone-b`/`zone-c`, so west's `zone-c` and east's `zone-c` were the same
+string and cross-*region* traffic was counted as zone-local.
+[`SHORTCOMINGS.md` § 16](../results/SHORTCOMINGS.md) has the details and calls
+for the re-measurement.
 
 ### 6. Zone-aware balancing — enterprise only
 

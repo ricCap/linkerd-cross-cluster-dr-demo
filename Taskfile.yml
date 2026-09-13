@@ -152,10 +152,12 @@ tasks:
       # and this is the last chance to find that out while the cluster still
       # exists.
       #
-      # The test is for a `wal/` entry, NOT for `prometheus/data`. The container
-      # runs --storage.tsdb.path=/prometheus, so `tar cf - -C / prometheus`
-      # produces prometheus/wal/, prometheus/chunks_head/, prometheus/lock --
-      # and no `data` directory at any depth. The old check therefore rejected
+      # The test is for a `wal/` entry, NOT for `prometheus/data`. The data
+      # volume is mounted at /prometheus and prom/prometheus defaults its TSDB
+      # path there (09-grafana.sh passes no --storage.tsdb.path), so
+      # `tar cf - -C / prometheus` produces prometheus/wal/,
+      # prometheus/chunks_head/, prometheus/lock -- and no `data` directory at
+      # any depth. Verified against a live rig. The old check therefore rejected
       # every archive it was given, exiting 1 with "not a readable TSDB archive"
       # AFTER writing a perfectly good one. `wal/` is also exactly what
       # grafana/archive-stack.sh locates the TSDB by, so the two agree on what a

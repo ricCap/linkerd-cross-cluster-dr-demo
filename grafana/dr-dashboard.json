@@ -658,7 +658,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "**By destination cluster** \u2014 a dying cluster falls to zero while survivors absorb its share, derived from pod CIDRs since Linkerd labels no cluster on remote-discovery endpoints.\n\n**Zone locality** is a cost chart here: OSS balances zone-agnostically, so ~2/3 of requests cross a zone. HAZL should show ~100% local."
+        "content": "**By destination cluster** \u2014 a dying cluster falls to zero while survivors absorb its share, derived from pod CIDRs since Linkerd labels no cluster on remote-discovery endpoints.\n\n**Zone locality** is a cost chart here: OSS balances zone-agnostically, so nearly every request crosses a zone. HAZL should show ~100% local *within a region*. Resting numbers predate region-scoped zones and need re-measuring \u2014 SHORTCOMINGS \u00a7 16."
       }
     },
     {
@@ -703,7 +703,7 @@
     {
       "type": "timeseries",
       "title": "Zone locality of federated traffic  \u2190 OSS has none",
-      "description": "Share of federated requests whose destination was in the client's own zone.\n\n**On OSS, ~1/3 local is correct and expected.** Open source Linkerd balances zone-agnostically across all 9 federated endpoints, and 3 of those 9 sit in the client's zone \u2014 so a third stays local and two thirds cross a zone boundary. That is the cross-AZ egress you are paying for.\n\n**Under HAZL it should sit at ~100% local**, and remote traffic appearing is HAZL widening the pool under load. The contrast between these two pictures is the point.",
+      "description": "Share of federated requests whose destination was in the client's own zone.\n\n**On OSS, nearly all of this traffic is expected to be cross-zone.** Open source Linkerd balances zone-agnostically across all 9 federated endpoints, and zones are region-scoped, so a west client has exactly ONE zone-local endpoint of the nine: its own cluster's pod in its own zone. That is the cross-AZ egress you are paying for.\n\n**The resting figure here has not been re-measured since zones became region-scoped.** It previously read ~1/3 local, an artifact of every cluster labelling its nodes `zone-a`/`zone-b`/`zone-c` \u2014 so west's `zone-c` and east's `zone-c` were the same string and cross-region traffic counted as local. See `results/SHORTCOMINGS.md` \u00a7 16.\n\n**Under HAZL it should sit at ~100% local**, and remote traffic appearing is HAZL widening the pool under load. The contrast between these two pictures is the point.",
       "datasource": {
         "type": "prometheus",
         "uid": "dr-prom"
