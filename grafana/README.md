@@ -25,6 +25,10 @@ Prometheus TSDB plus its fault annotations — into `prometheus-archive/`. The
 second replays it against a throwaway Prometheus and Grafana in two Docker
 containers. Nothing touches a cluster, and no cluster needs to exist.
 
+If the fetch reports no such release, none has been published for this revision
+yet. Path B below produces the same two files from a live rig, and everything
+after this section applies either way.
+
 It finishes by printing the link you actually want — roughly this, with your
 run's own numbers:
 
