@@ -72,6 +72,18 @@ connector joins, and how many there are — `west` has *two* links to `east`, an
 a redraw that quietly moves one of them to `central` changes what the picture
 claims. `GATEWAY_LINKS` in `clusters/05-multicluster.sh` is the authority.
 
+## A node is drawn as a node
+
+Cluster nodes are the Kubernetes node icon, not a coloured dot. A dot has to be
+decoded from a legend; the icon does not, and it stops "green dot" and "grey
+dot" carrying meaning that only the legend explains. Dimmed means gone. A red X
+across a band means the whole cluster is gone; a red outline on one cell means
+that zone is degraded but still serving — an X there would claim the wrong
+thing.
+
+Keep edges straight. Where a straight line will not do, use a real curve
+(`roundness: {"type": 2}`) rather than a chain of short segments.
+
 ## Recorded runs are exempt
 
 `results/` and `docs/feeds/` are the record of what was measured, in the

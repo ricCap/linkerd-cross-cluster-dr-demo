@@ -29,6 +29,28 @@ labels, each experiment's target, and which cluster each is observed from. FM3
 slows `zone-a1` in region-a and leaves west alone, which is what the brownout
 now does.
 
-Ordering follows [`CHARTS.md`](../CHARTS.md): clusters read **west → central →
-east**, with the region boundaries drawn around them. `07` lists FM4's target as
-`central + east` for the same reason.
+`all-diagrams` is **generated**: run `python3 diagrams/build-all.py` after
+editing any of the seven, and never edit it by hand. `example.excalidraw` is the style reference and holds the
+node icon at its original 684px; the scenes embed a 256px copy, which is eight
+times the 32px they draw it at and a tenth of the bytes.
+
+## The layout
+
+Zones are vertical columns. A cluster is a horizontal band crossing them, and
+each cluster × zone cell holds one Kubernetes node. Two clusters in one region
+cross the *same* three columns, which is the point: `east` and `central` share
+`zone-a1..a3`. The previous layout drew those zones once per cluster and so
+implied six distinct zones where there are three.
+
+| | |
+|---|---|
+| dashed grey box | a region |
+| grey column | a zone |
+| black band | a cluster |
+| node icon | one node, one app replica |
+| dimmed icon + red X | the cluster is gone (FM2, FM4) |
+| red cell outline | that zone is slowed, not gone (FM3) |
+| teal solid | flat, pod-to-pod link |
+| amber dashed | gateway link |
+
+Ordering follows [`CHARTS.md`](../CHARTS.md): west, then central above east.
