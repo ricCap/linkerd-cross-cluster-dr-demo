@@ -70,7 +70,22 @@ In the figures, teal solid is a **pod-to-pod (flat) link** and amber dashed is a
 **gateway link**. Reordering a figure must preserve which pairs of clusters each
 connector joins, and how many there are — `west` has *two* links to `east`, and
 a redraw that quietly moves one of them to `central` changes what the picture
-claims. `GATEWAY_LINKS` in `clusters/05-multicluster.sh` is the authority.
+claims. `clusters/05-multicluster.sh` is the authority.
+
+**Both kinds are directional, and the arrowheads have to say so.** A Link is
+generated from the target and applied to the *source*, so the source is the
+cluster that runs the service-mirror controller and gets the mirror services,
+and traffic flows source → target.
+
+- **Flat links are created for every ordered pair** — `05-multicluster.sh` loops
+  `src × dst` — so every pair is linked in both directions. Draw them
+  double-headed.
+- **Gateway links are `GATEWAY_LINKS="west:east central:east"`** — two links,
+  both one-way *into* `east`, which is the gateway target. Nothing mirrors east
+  back out. Draw them with a single head, pointing at east.
+
+Drawing either as a plain line claims they are undirected, and for the gateway
+links that is simply wrong.
 
 ## A node is drawn as a node
 

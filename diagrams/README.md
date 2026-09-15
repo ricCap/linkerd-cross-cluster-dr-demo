@@ -50,7 +50,7 @@ implied six distinct zones where there are three.
 | node icon | one node, one app replica |
 | dimmed icon + red X | the cluster is gone (FM2, FM4) |
 | red cell outline | that zone is slowed, not gone (FM3) |
-| teal solid | flat, pod-to-pod link |
-| amber dashed | gateway link |
+| teal, double-headed | flat pod-to-pod link — every ordered pair, both ways |
+| amber dashed, single head | gateway link — one way, into `east` |
 
 Ordering follows [`CHARTS.md`](../CHARTS.md): west, then central above east.

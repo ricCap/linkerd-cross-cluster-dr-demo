@@ -1242,7 +1242,7 @@
     },
     {
       "id": "e0037xxxxxxxxxxxxxxx",
-      "type": "line",
+      "type": "arrow",
       "x": 210.0,
       "y": 162.0,
       "width": 138.0,
@@ -1269,6 +1269,8 @@
       "link": null,
       "locked": false,
       "index": "a0111",
+      "startArrowhead": "arrow",
+      "endArrowhead": "arrow",
       "points": [
         [
           0.0,
@@ -1293,13 +1295,11 @@
       ],
       "lastCommittedPoint": null,
       "startBinding": null,
-      "endBinding": null,
-      "startArrowhead": null,
-      "endArrowhead": null
+      "endBinding": null
     },
     {
       "id": "e0038xxxxxxxxxxxxxxx",
-      "type": "line",
+      "type": "arrow",
       "x": 210.0,
       "y": 170.0,
       "width": 138.0,
@@ -1326,6 +1326,8 @@
       "link": null,
       "locked": false,
       "index": "a0114",
+      "startArrowhead": "arrow",
+      "endArrowhead": "arrow",
       "points": [
         [
           0.0,
@@ -1350,13 +1352,11 @@
       ],
       "lastCommittedPoint": null,
       "startBinding": null,
-      "endBinding": null,
-      "startArrowhead": null,
-      "endArrowhead": null
+      "endBinding": null
     },
     {
       "id": "e0039xxxxxxxxxxxxxxx",
-      "type": "line",
+      "type": "arrow",
       "x": 210.0,
       "y": 178.0,
       "width": 138.0,
@@ -1383,6 +1383,7 @@
       "link": null,
       "locked": false,
       "index": "a0117",
+      "endArrowhead": "arrow",
       "points": [
         [
           0.0,
@@ -1408,12 +1409,11 @@
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
-      "startArrowhead": null,
-      "endArrowhead": null
+      "startArrowhead": null
     },
     {
       "id": "e0040xxxxxxxxxxxxxxx",
-      "type": "line",
+      "type": "arrow",
       "x": 418.0,
       "y": 185.0,
       "width": 0.0,
@@ -1438,6 +1438,8 @@
       "link": null,
       "locked": false,
       "index": "a0120",
+      "startArrowhead": "arrow",
+      "endArrowhead": "arrow",
       "points": [
         [
           0.0,
@@ -1450,13 +1452,11 @@
       ],
       "lastCommittedPoint": null,
       "startBinding": null,
-      "endBinding": null,
-      "startArrowhead": null,
-      "endArrowhead": null
+      "endBinding": null
     },
     {
       "id": "e0041xxxxxxxxxxxxxxx",
-      "type": "line",
+      "type": "arrow",
       "x": 434.0,
       "y": 185.0,
       "width": 0.0,
@@ -1481,6 +1481,7 @@
       "link": null,
       "locked": false,
       "index": "a0123",
+      "endArrowhead": "arrow",
       "points": [
         [
           0.0,
@@ -1494,8 +1495,7 @@
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
-      "startArrowhead": null,
-      "endArrowhead": null
+      "startArrowhead": null
     },
     {
       "id": "e0042xxxxxxxxxxxxxxx",
@@ -1610,7 +1610,7 @@
     },
     {
       "id": "e0045xxxxxxxxxxxxxxx",
-      "type": "line",
+      "type": "arrow",
       "x": 6.0,
       "y": 438.0,
       "width": 34.0,
@@ -1635,6 +1635,8 @@
       "link": null,
       "locked": false,
       "index": "a0135",
+      "startArrowhead": "arrow",
+      "endArrowhead": "arrow",
       "points": [
         [
           0.0,
@@ -1647,16 +1649,14 @@
       ],
       "lastCommittedPoint": null,
       "startBinding": null,
-      "endBinding": null,
-      "startArrowhead": null,
-      "endArrowhead": null
+      "endBinding": null
     },
     {
       "id": "e0046xxxxxxxxxxxxxxx",
       "type": "text",
       "x": 48.0,
       "y": 432.0,
-      "width": 238.7,
+      "width": 279.62,
       "height": 13.75,
       "angle": 0,
       "strokeColor": "#59646a",
@@ -1678,8 +1678,8 @@
       "link": null,
       "locked": false,
       "index": "a0138",
-      "text": "flat link (pod-to-pod) — every pair",
-      "originalText": "flat link (pod-to-pod) — every pair",
+      "text": "flat link — every ordered pair, both ways",
+      "originalText": "flat link — every ordered pair, both ways",
       "fontSize": 11,
       "fontFamily": 3,
       "textAlign": "left",
@@ -1690,9 +1690,9 @@
     },
     {
       "id": "e0047xxxxxxxxxxxxxxx",
-      "type": "line",
-      "x": 300.0,
-      "y": 438.0,
+      "type": "arrow",
+      "x": 6.0,
+      "y": 456.0,
       "width": 34.0,
       "height": 0.0,
       "angle": 0,
@@ -1715,6 +1715,7 @@
       "link": null,
       "locked": false,
       "index": "a0141",
+      "endArrowhead": "arrow",
       "points": [
         [
           0.0,
@@ -1728,15 +1729,14 @@
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
-      "startArrowhead": null,
-      "endArrowhead": null
+      "startArrowhead": null
     },
     {
       "id": "e0048xxxxxxxxxxxxxxx",
       "type": "text",
-      "x": 342.0,
-      "y": 432.0,
-      "width": 211.42,
+      "x": 48.0,
+      "y": 450.0,
+      "width": 225.06,
       "height": 13.75,
       "angle": 0,
       "strokeColor": "#59646a",
@@ -1758,8 +1758,8 @@
       "link": null,
       "locked": false,
       "index": "a0144",
-      "text": "gateway link — both target east",
-      "originalText": "gateway link — both target east",
+      "text": "gateway link — one way, into east",
+      "originalText": "gateway link — one way, into east",
       "fontSize": 11,
       "fontFamily": 3,
       "textAlign": "left",
