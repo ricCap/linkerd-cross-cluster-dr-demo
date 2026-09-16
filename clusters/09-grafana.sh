@@ -400,8 +400,11 @@ fi
 DASH_SUM="$(cat "$DASH_DIR"/*.json | python3 -c 'import hashlib,sys; print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest()[:12])')"
 
 log "deploying Grafana"
-# Two ConfigMaps: the vendored dashboards are large (the HAZL one alone is
-# ~150KB) and a single map would crowd the 1MB object limit.
+# Two ConfigMaps, not one. The vendored dashboards are large -- Health alone is
+# ~60KB -- and the split keeps either map clear of the 1MB object limit as more
+# are added. It was the 150KB HAZL dashboard that first made this necessary;
+# that one is no longer vendored (grafana/vendor/README.md says why), but the
+# headroom is worth keeping.
 kubectl --context="$CTX" create configmap dr-dashboards \
   --namespace "$GRAFANA_NS" \
   --from-file="${DASH_DIR}/dr-dashboard.json" \
@@ -540,7 +543,13 @@ Grafana is deployed. Expose it with:
 
   -> http://localhost:${GRAFANA_PORT}  (anonymous admin, no login)
 
-The 'Disaster Recovery' folder holds the cross-cluster dashboard. Linkerd's
-official dashboards can be imported from the Grafana UI by ID against the same
-datasource: 15474 (Top Line), 15475 (Deployment), 15486 (Health).
+The 'Disaster Recovery' folder holds the cross-cluster dashboard, plus Linkerd's
+own Top Line and Health dashboards (vendored; Apache 2.0, see
+grafana/vendor/README.md). Others import from the Grafana UI by ID against the
+same datasource -- 15475 (Deployment), and the rest at
+https://grafana.com/orgs/linkerd/dashboards.
+
+On LINKERD_FLAVOR=bel, the HAZL dashboard is ID 23979. It is deliberately not
+vendored here: it is not part of open-source Linkerd and states no licence, so
+this repo does not redistribute it. Dashboards -> New -> Import -> 23979.
 EOF

@@ -241,4 +241,4 @@ anywhere the runners disagree with it.
 | `alert-rules.yml` | 8 recording rules, 21 alerts, and the foil |
 | `archive-stack.sh` | replays an archived TSDB offline (`task archive`) |
 | `prepare.py` | rewrites grafana.com dashboards for file provisioning |
-| `vendor/` | Linkerd's own dashboards: 15474 Top Line, 15486 Health, 23979 HAZL |
+| `vendor/` | Linkerd's own dashboards, Apache 2.0: 15474 Top Line, 15486 Health — see [`vendor/README.md`](vendor/README.md) |
