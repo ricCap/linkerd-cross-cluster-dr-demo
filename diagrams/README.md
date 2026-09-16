@@ -1,45 +1,36 @@
 # Diagrams
 
-Excalidraw scenes, and the editable source of truth for the diagrams in the
-write-up. Open them at [excalidraw.com](https://excalidraw.com) or in the VS Code
-extension, edit, and save back over the `.excalidraw` file.
+Excalidraw scenes, and the editable source of truth for the figures in
+[`README.md`](../README.md). Open one at [excalidraw.com](https://excalidraw.com)
+or in the VS Code extension, edit, save back over the `.excalidraw`, then
+**re-render**:
 
-They came from the private `linkerd-cross-cluster-disaster-recovery-demo` repo,
-which is being retired. Only the scenes were carried over — not the SVG/PNG
-renders, and not the `render.sh` / `to-excalidraw.py` pipeline that produced
-them. Export from Excalidraw when a render is needed.
+```bash
+python3 diagrams/render-svg.py
+```
+
+GitHub will not render an `.excalidraw`, so the committed `.svg` beside each
+scene is what a reader actually sees. `render-svg.py` is not Excalidraw's own
+exporter: it places every shape exactly, but draws `roughness: 1` shapes as
+clean geometry rather than with the hand-drawn wobble. If that matters for a
+particular figure, export it from Excalidraw and overwrite the `.svg` — the
+README references the file, not the script.
 
 | | |
 |---|---|
-| `01-steady-state-topology` | three clusters, two regions, zones and pod CIDRs |
-| `02-steady-state-exposure-modes` | the same workload exposed three ways |
-| `03-fm1-control-plane` | FM1, `central` frozen |
+| `01-steady-state-topology` | three clusters, two regions, zones and the links between them |
+| `02-steady-state-exposure-modes` | the same workload exposed three ways, one panel each |
+| `03-fm1-control-plane` | FM1, `central`'s control plane scaled to zero |
 | `04-fm2-cluster` | FM2, `east` stopped or cut off |
 | `05-fm3-zone-brownout` | FM3, one zone of `region-a` slowed |
 | `06-fm4-region` | FM4, `region-a` lost |
-| `07-mode-coverage` | every exposure mode against every failure mode |
-| `all-diagrams` | all seven on one canvas |
-
-## Checked against the topology
-
-Verified against `clusters/lib.sh` after the region-scoped zone rework: zone
-names (`zone-b1..b3` in west, `zone-a1..a3` shared by east and central), the
-pod CIDRs, `dr-net 172.28.0.0/16`, the 9-endpoint federated pool, the exposure
-labels, each experiment's target, and which cluster each is observed from. FM3
-slows `zone-a1` in region-a and leaves west alone, which is what the brownout
-now does.
-
-`all-diagrams` is **generated**: run `python3 diagrams/build-all.py` after
-editing any of the seven, and never edit it by hand. `example.excalidraw` is the style reference and holds the
-node icon at its original 684px; the scenes embed a 256px copy, which is eight
-times the 32px they draw it at and a tenth of the bytes.
 
 ## The layout
 
 Zones are vertical columns. A cluster is a horizontal band crossing them, and
-each cluster × zone cell holds one Kubernetes node. Two clusters in one region
-cross the *same* three columns, which is the point: `east` and `central` share
-`zone-a1..a3`. The previous layout drew those zones once per cluster and so
+each cluster × zone cell holds a node. Two clusters in one region cross the
+*same* three columns, which is the point: `east` and `central` share
+`zone-a1..a3`. An earlier layout drew those zones once per cluster and so
 implied six distinct zones where there are three.
 
 | | |
@@ -47,10 +38,19 @@ implied six distinct zones where there are three.
 | dashed grey box | a region |
 | grey column | a zone |
 | black band | a cluster |
-| node icon | one node, one app replica |
-| dimmed icon + red X | the cluster is gone (FM2, FM4) |
+| node icon, podinfo card | one node, one app replica |
+| dimmed + red X | the cluster is gone (FM2, FM4) |
 | red cell outline | that zone is slowed, not gone (FM3) |
 | teal, double-headed | flat pod-to-pod link — every ordered pair, both ways |
 | amber dashed, single head | gateway link — one way, into `east` |
 
 Ordering follows [`CHARTS.md`](../CHARTS.md): west, then central above east.
+
+## Checked against the topology
+
+Verified against `clusters/lib.sh` after the region-scoped zone rework: zone
+names (`zone-b1..b3` in west, `zone-a1..a3` shared by east and central), the pod
+CIDRs, `dr-net 172.28.0.0/16`, the 9-endpoint federated pool, the exposure
+labels, each experiment's target, and which cluster each is observed from. FM3
+slows `zone-a1` in region-a and leaves west alone, which is what the brownout
+does. Link directions come from `clusters/05-multicluster.sh`.

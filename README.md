@@ -55,6 +55,12 @@ had the region experiment destroying the cluster doing the recording.
 `verify/fm4-verify.sh` now refuses to run if the observability stack is inside
 the target region.
 
+![Steady-state topology](diagrams/01-steady-state-topology.svg)
+
+`east` and `central` cross the *same* three zone columns, because that is what
+sharing a region means. Flat links exist for every ordered pair and run both
+ways; the gateway links are one-way into `east`.
+
 One `podinfo` workload, exposed three ways, so a **single** fault gives you
 three results you can compare directly:
 
@@ -63,6 +69,8 @@ three results you can compare directly:
 | `app` | federated | `mirror.linkerd.io/federated=member` |
 | `app-flat` | flat mirror (pod-to-pod) | `mirror.linkerd.io/exported=remote-discovery` |
 | `app-gateway` | gateway mirror | `mirror.linkerd.io/exported=true` |
+
+![The three exposure modes](diagrams/02-steady-state-exposure-modes.svg)
 
 `clusters/lib.sh` is the one place cluster names, regions and CIDRs are defined.
 The k3d configs are generated from it — edit the table, not the YAML.
@@ -83,6 +91,15 @@ non-zero if a check fails.
 
 Three of the five rows say Kubernetes notices nothing at all. That is the point:
 every pod stays `Running` and every cluster-level dashboard stays green.
+
+| | |
+|---|---|
+| ![FM1](diagrams/03-fm1-control-plane.svg) | ![FM2](diagrams/04-fm2-cluster.svg) |
+| ![FM3](diagrams/05-fm3-zone-brownout.svg) | ![FM4](diagrams/06-fm4-region.svg) |
+
+A red X is a cluster that is gone; a red outline is a zone that is slowed but
+still serving. FM5 has no figure — a trust anchor has no blast radius you can
+draw. The scenes are in [`diagrams/`](diagrams/README.md) and are editable.
 
 ```bash
 task fm2 VARIANT=hard     # a partition, not a polite shutdown
@@ -203,6 +220,7 @@ chaos/      failure-mode manifests and scripts
 grafana/    dr-dashboard.json, alert-rules.yml
             archive-stack.sh                   replays a run's charts offline
             README.md                          how to open it, and how to read it
+diagrams/   *.excalidraw + rendered *.svg      the figures above; render-svg.py
 viz/        export.sh + index.html             status page over a snapshot feed
             build.sh                           bundles recorded runs into docs/
 docs/       generated, committed               the published replay site
