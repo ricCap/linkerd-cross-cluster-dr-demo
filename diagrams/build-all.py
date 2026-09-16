@@ -78,15 +78,23 @@ def main():
             for key in ("containerId", "frameId"):
                 if e.get(key) in remap:
                     e[key] = remap[e[key]]
+            # References to elements that are no longer here are dropped rather
+            # than carried over. Deleting an arrow in Excalidraw leaves the
+            # shape it was bound to holding a stale entry; the editor prunes
+            # those on load, and a merged scene should not be stricter than the
+            # editor that produced it.
             if e.get("boundElements"):
                 e["boundElements"] = [
-                    {**b, "id": remap.get(b.get("id"), b.get("id"))}
-                    for b in e["boundElements"]
+                    {**b, "id": remap[b["id"]]}
+                    for b in e["boundElements"] if b.get("id") in remap
                 ]
             for key in ("startBinding", "endBinding"):
                 b = e.get(key)
-                if isinstance(b, dict) and b.get("elementId") in remap:
-                    e[key] = {**b, "elementId": remap[b["elementId"]]}
+                if isinstance(b, dict) and b.get("elementId") is not None:
+                    e[key] = ({**b, "elementId": remap[b["elementId"]]}
+                              if b["elementId"] in remap else None)
+            if e.get("containerId") and e["containerId"] not in remap:
+                e["containerId"] = None
             # `index` must go: each scene carries its own fractional-index
             # sequence, so concatenating seven of them is guaranteed to be
             # non-monotonic, which Excalidraw rejects on load. Dropping it lets
