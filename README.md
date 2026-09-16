@@ -1,7 +1,7 @@
-# Cross-cluster disaster recovery: a testable mesh tier
+# Cross-cluster disaster recovery: Linkerd chaos experiments
 
-A local test rig for running a **cross-cluster DR exercise** against Linkerd.
-Three k3d clusters on a flat network, one workload exposed three different ways,
+A local test setup to run a **cross-cluster DR exercise** against Linkerd.
+Three k3d clusters on a flat network with workload exposed in three different ways,
 and chaos experiments that break the mesh on purpose so you can measure what
 your DR plan actually does.
 
@@ -11,6 +11,14 @@ test.
 
 **[▶ Browse the recorded runs](https://riccap.github.io/linkerd-cross-cluster-dr-demo/)**
 — the status page, replaying every experiment. No cluster needed.
+
+## Limitations
+While experiments are designed and verified by hand and against official documentation, this repo was generated using AI, and heavily relies on bash scripts and a lot of glue code.
+
+If you want to replicate these experiments in your clusters, here's a quick checklist:
+1. Choose a load generator that can keep track of experiments (e.g., k6 or Gatling)
+2. Choose a consistent way to inject fautls (e.g., Chaos Mesh or Litmus Chaos)
+3. Write down your architecture and what you expect to happen during the experiments, and what alerts you expect to fire
 
 ## Quick start
 
