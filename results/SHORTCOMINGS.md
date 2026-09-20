@@ -533,7 +533,7 @@ rig afterwards rather than trusting the runner's own summary.
 
 ---
 
-## 16. Zone labels were duplicated across regions  *(fixed; FM3 needs re-measuring)*
+## 16. Zone labels were duplicated across regions  *(fixed; re-measured in § 17)*
 
 Every cluster labelled its nodes `zone-a` / `zone-b` / `zone-c`. `ZONES` was a
 single global list, so west's `zone-c` and east's `zone-c` were **the same
@@ -590,3 +590,115 @@ way they acquire the new names is a re-run on a region-scoped rig, which is
 the FM3 re-measurement this section already calls for; it regenerates the
 feeds, and the published viz — which reads zone names out of each feed rather
 than from the code — catches up at the same moment.
+
+---
+
+## 17. The FM3 re-measurement, and what it cost to get  *(measured 2026-09-20)*
+
+§ 16 asked for FM3 to be re-measured on region-scoped zones and predicted the
+claim would "probably narrow to *within a region*". It narrowed further than
+that, and two instrument defects had to be fixed before the sweep could produce
+anything at all.
+
+Recorded 2026-09-20, BEL `enterprise-2.20.1`, `PROFILE=default`, load from
+`west` only, 30 rps. Five failure modes into one TSDB, published as the
+`sample-run-2026-09-20` release.
+
+### At rest HAZL uses 1 of 9 endpoints, not 3 of 9
+
+Measured directly by `verify/fm5-verify.sh`'s baseline: `HAZL is using 1 of 9
+endpoints at rest`. `verify/fm3-verify.sh` agreed from the other side — it sized
+the band high at **2.00** against an active pool of **1**, where the 400ms
+default latency was calibrated for a high of 6.00 and a pool of 3.
+
+The recorded claim was 3 of 9, "the same-zone pod in *each* of the three
+clusters". § 16 called that an artifact of the duplicated labels and it was:
+with region-scoped zones, `west`'s only zone-local endpoint is its own. Not
+"within a region" either — `west` is alone in `region-b`, so its within-region
+set is itself.
+
+This also closes the `active=4` open question § 16 flagged. That number counted
+zone-locality matches the duplicated labels were manufacturing.
+
+### FM3 cannot reach HAZL at all, and the reason is structural
+
+The fault landed on real pods this time. Every cluster had one app replica per
+zone, verified before injecting. FM3 still measured nothing:
+
+```
+HAZL widens the endpoint pool                    FAIL  stayed at 1 active
+federated mode steps off the slow zone (widens)  FAIL  active 1 -> 1, 0 remote-zone reqs
+```
+
+This is **not** the placement drift recorded in `FINDINGS.md` under "FM3's
+premise stopped holding". That was pods scheduling off their zones, and the
+guard written for it did its job here — it refused an earlier attempt outright
+when `east` had no pod in `zone-a1`. This is the topology itself:
+
+- `west` generates all the load (`LOAD_CLUSTERS` defaults to `west`, so offered
+  load stays constant while serving capacity shrinks).
+- `west` is alone in `region-b`, and at rest HAZL uses its one zone-local
+  endpoint — in `west`.
+- The brownout slows `zone-a1` in `region-a`, which that traffic never touches.
+
+So the load band is never crossed and HAZL has no reason to widen. Two of the
+rig's deliberate design choices — the observer isolated in its own region, and
+load generated only from the observer — are now jointly incompatible with a
+brownout in the other region.
+
+**FM3 needs redesigning, not re-running.** Any fix trades away one of those
+choices: brown out `west`'s own zone (the observer stops being untouchable), or
+generate load from inside `region-a` (offered load stops being constant). Both
+are defensible; neither is free, and picking one is a decision about what the
+experiment is for. Until then FM3 produces a confident negative result about
+HAZL that is really a statement about where the load comes from.
+
+### FM5 issuer drift did not reproduce, on one run
+
+```
+issuer-only drift is REFUSED and the cluster keeps serving   FAIL  0 reqs -- the cluster went down, so the issuer was adopted
+trust failure does NOT degrade to plaintext                  PASS  0 non-mTLS -- it fails closed
+```
+
+`FINDINGS.md` records "Linkerd fails safe on issuer drift". The security half
+held — it failed closed, no plaintext — but "refuses the drift and keeps
+serving" did not. **One run is not a result.** `0 reqs` is also what the
+measurement window would show if the cluster were down for an unrelated reason,
+and this sweep had already disturbed the rig twice. Recorded so it is not lost;
+not claimed until a second run says the same thing.
+
+### Two instrument defects, found by running the sweep
+
+**FM4's guard could never pass, and left the region cut.** It counted running
+node containers and required zero. `chaos/fm4-region-loss.sh` cuts a region with
+`docker network disconnect`, and a disconnected container is still running, so
+`docker ps` still lists it. The count gave it away as well — 8 for a region
+holding 6 nodes, because the `name=k3d-<cluster>-` filter also matched each
+cluster's `serverlb`. It `die`d between injecting and restoring, so `east` and
+`central` stayed off `dr-net` and the next experiment was queued to measure a
+partitioned rig. Fixed: the guard now asks whether any of the region's node
+containers is still attached to `dr-net`, and names the ones that are.
+
+**Recovering from that unmeshed half the rig.** Pods restarted while the
+proxy-injector was unavailable and came back `1/1` — Running, Ready, and serving
+without mTLS. `verify/meshed.sh --fix` needed two attempts; the first restart
+raced the injector again. This is the failure `FINDINGS.md` already records
+under "The most under-reported failure: workloads come back unmeshed" —
+reproduced here as a side effect of a botched recovery rather than of the
+experiment itself, which is a new way to reach it and worth knowing.
+
+### A claim in the history that is wrong
+
+Commit `d17d172` says the old `archive:save` tar check "rejected every archive it
+was given, exiting 1 after writing a perfectly good one". **It would not have.**
+The real in-cluster Prometheus writes `prometheus/data/`, which the old
+`grep -c 'prometheus/data'` matches; the archive published on 2026-09-20 passes
+it. What actually happened is that the check was tested against a synthetic
+fixture built by running `prom/prometheus` directly with
+`--storage.tsdb.path=/prometheus`, which produces `prometheus/wal/` instead, and
+the failure of that fixture was generalised to the real system without checking.
+
+The replacement check is still correct — it looks for a `wal/` entry, which both
+layouts contain — but it is more permissive than what it replaced, not a fix for
+a bug that was breaking real archives. Recorded here rather than by rewriting
+pushed history.

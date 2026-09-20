@@ -5,6 +5,8 @@ It uses [k3d](https://k3d.io/stable/) to create three clusters on a shared Docke
 
 **[▶ Browse the recorded runs](https://riccap.github.io/linkerd-cross-cluster-dr-demo/)** to visualize the past experiments that are committed along with the repo.
 
+You can also preview the dashboard used in the experiments by running `task archive:fetch && task archive`: these commands replays a recorded session by starting two Docker containers (Prometheus+Grafana); see [`grafana/README.md`](grafana/README.md) for more info.
+
 ## Limitations
 While experiments are designed and verified by hand and against official documentation, this repo was generated using AI, and heavily relies on bash scripts and a lot of glue code. This repo is not aimed to be replicated 1:1 in production, but is used as evidence to make claims about Linkerd behaviours during chaos tests.
 
