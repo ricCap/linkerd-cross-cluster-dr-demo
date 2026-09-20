@@ -6,7 +6,7 @@ It uses [k3d](https://k3d.io/stable/) to create three clusters on a shared Docke
 **[▶ Browse the recorded runs](https://riccap.github.io/linkerd-cross-cluster-dr-demo/)** to visualize the past experiments that are committed along with the repo.
 
 ## Limitations
-While experiments are designed and verified by hand and against official documentation, this repo was generated using AI, and heavily relies on bash scripts and a lot of glue code. This repo is not aimed to be replicated 1:1 in production, but is used as evidence to make claims about Linekerd behaviours during chaos tests.
+While experiments are designed and verified by hand and against official documentation, this repo was generated using AI, and heavily relies on bash scripts and a lot of glue code. This repo is not aimed to be replicated 1:1 in production, but is used as evidence to make claims about Linkerd behaviours during chaos tests.
 
 If you want to replicate these experiments in your clusters, here's a quick checklist to make your experiments reproducible:
 1. Choose a load generator that can keep track of experiments (e.g., [k6](https://k6.io/) or [Gatling](https://gatling.io/download-gatling-community-edition))
@@ -36,29 +36,16 @@ Each runs starts from a baseline traffic, injects the fault, measures, restores,
 ![FM1](diagrams/03-fm1-control-plane.svg)
 
 ### Experiment 2
-![FM2](diagrams/04-fm2-control-plane.svg)
+![FM2](diagrams/04-fm2-cluster.svg)
 
 ### Experiment 3
 ![FM3](diagrams/05-fm3-zone-brownout.svg)
 
 ### Experiment 4
-![FM2](diagrams/04-fm2-control-plane.svg)
-
-### Experiment 3
 ![FM4](diagrams/06-fm4-region.svg)
 
-To run a simulation, you can use the Taskfile provided in the repo.
-```bash
-task fm2 VARIANT=hard     # create network partition
-task fm1 MODE=identity    # simulate failure of identity service
-```
-
-The results land in `results/<profile>/<run>/`.
-
-**Run `task fm0` before any run that matters.** This verifies the baseline and is a prerequisite for the experiments.
-
 ## How to run it
-Find out more in how to run the simulation yourself.
+Find out more in [SIMULATION.md](./SIMULATION.md) how to run the simulation yourself.
 
 ## Credits
 

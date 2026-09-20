@@ -41,6 +41,17 @@ Open source covers the cluster, region, and control-plane failure modes. HAZL
 enterprise features — [`verify/metrics.md`](verify/metrics.md) lists exactly
 which metrics exist in each.
 
+## Run it
+To run a simulation, you can use the Taskfile provided in the repo.
+```bash
+task fm2 VARIANT=hard     # create network partition
+task fm1 MODE=identity    # simulate failure of identity service
+```
+
+The results land in `results/<profile>/<run>/`.
+
+**Run `task fm0` before any run that matters.** This verifies the baseline and is a prerequisite for the experiments.
+
 ## Watching it happen
 
 `task watch` is the terminal view. The status page shows the same topology,
