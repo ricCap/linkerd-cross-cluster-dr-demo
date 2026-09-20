@@ -10,6 +10,48 @@ cluster.
 
 ---
 
+# The 2026-09-20 sweep (BEL, all five modes, one TSDB)
+
+Five failure modes run back to back into a single Prometheus database and
+published as the `sample-run-2026-09-20` release, so the charts behind these
+numbers can be replayed without a cluster.
+
+Environment: BEL `enterprise-2.20.1`, `PROFILE=default`, load from `west` only at
+30 rps, region-scoped zones. Taken after the `c7d2b57` delta fix, so throughput
+and error figures here are quotable.
+
+| | Measured |
+|---|---|
+| FM1 identity | cert headroom **23h22m** — how long `central`'s data plane keeps serving with `linkerd-identity` stopped |
+| FM2 hard | federated **103% of expected**, 0 errors of 2860; `app-flat-east` served **45 of 233 attempts** (188 errors); `app-gateway-east-gw` **42 of 185** (143 errors) — both **1% of expected** |
+| FM4 region | `west` absorbed **99% of expected**, 0 errors of 3891, **0 non-mTLS**, dashboard answered **13/13** probes |
+| FM5 drift | federation held **97% of expected**, **0 non-mTLS** — it fails closed |
+
+**FM2 is the argument in one row.** Both mirrors collapsed to 1% of expected
+while the federated service beside them did not move — 2860 requests, zero
+errors, 103% of expected.
+
+Note what the mirrors did *not* do, because it cuts against the easy version of
+this story: they were not silent. `app-flat-east` errored on 188 of 233
+attempts. The load that vanished is the gap between 233 attempts and the ~2860 a
+healthy mode served in the same window — traffic that was never attempted,
+because a request with no endpoint to send it to waits in the balancer queue
+rather than failing. The errors are the small visible part; the collapse is the
+part no error counter records.
+
+**FM4 is the strongest result here.** Losing a whole region — two of three
+clusters, 6 of 9 endpoints — cost nothing: full throughput absorbed, no errors,
+no plaintext, and the observability stack answered every probe. That last part
+is why `west` sits alone in `region-b` and why `verify/fm4-verify.sh` refuses to
+run if the stack is inside the target region.
+
+**At rest HAZL uses 1 of 9 endpoints**, not the 3 of 9 recorded before zones
+were region-scoped. See `SHORTCOMINGS.md` § 17, which also records why FM3
+produced nothing this time, why FM5's "refuses the drift and keeps serving" did
+not reproduce, and the two instrument defects the sweep exposed.
+
+---
+
 # FM3's premise stopped holding, and the experiment could not tell
 
 Found by re-running FM3 before publishing its numbers, on a rig that had been
