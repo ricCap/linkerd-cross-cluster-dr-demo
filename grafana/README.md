@@ -10,7 +10,7 @@ short one needs no clusters at all.
 
 ---
 
-## A. Read a recorded run
+## A. Read a recorded session
 
 ```bash
 task archive:fetch
@@ -20,27 +20,35 @@ task archive:fetch
 task archive
 ```
 
-That is the whole path. The first downloads a published run — an archived
+That is the whole path. The first downloads the published session — one archived
 Prometheus TSDB plus its fault annotations — into `prometheus-archive/`. The
 second replays it against a throwaway Prometheus and Grafana in two Docker
 containers. Nothing touches a cluster, and no cluster needs to exist.
+
+**It is a session, not a single run.** The archive is the whole Prometheus
+database for the rig's lifetime, so one download holds every failure mode that
+was exercised, and every fault window is a red region on the dashboard. Jump
+between them rather than hunting through the time axis.
+
+The TSDB is ~120MB compressed. That is the cost of two hours of three clusters
+at 30 rps; the replay itself is quick.
 
 If the fetch reports no such release, none has been published for this revision
 yet. Path B below produces the same two files from a live rig, and everything
 after this section applies either way.
 
-It finishes by printing the link you actually want — roughly this, with your
-run's own numbers:
+It finishes by printing the link you actually want — roughly this, with the
+session's own numbers:
 
 ```
-  ok  704 distinct metric names recovered
-  ok  3 fault annotations restored from annotations-sample-run-fm2-hard.json
+  ok  618 distinct metric names recovered
+  ok  18 fault annotations restored from annotations-2026-09-20-1305.json
   ok  grafana    -> http://localhost:50761  (anonymous admin)
-  ok  data window -> 2026-09-08 14:31 .. 15:02 local
+  ok  data window -> 2026-09-20 11:04 .. 13:06 local
 
-Open the dashboard already scoped to the run, so the panels have data:
+Open the dashboard already scoped to the session, so the panels have data:
 
-  http://localhost:50761/d/dr-crosscluster/?from=1788861568000&to=1788863520000
+  http://localhost:50761/d/dr-crosscluster/?from=1789895084000&to=1789902404000
 ```
 
 **Use that URL, not the bare one.** The dashboard's time picker defaults to
@@ -51,6 +59,34 @@ reads the run's real window off the data to spare you that.
 ```bash
 task archive:down      # remove both containers
 ```
+
+### What is in the published session
+
+Recorded 2026-09-20 on `LINKERD_FLAVOR=bel`, `PROFILE=default`, load from `west`
+only. Every fault is a red region; the times are the annotation labels.
+
+| | |
+|---|---|
+| `fm0` | control run — no fault. No annotation, because nothing was injected. |
+| FM1 identity | `linkerd-identity` stopped in `central`. Cert headroom read 23h22m. |
+| FM2 hard | `east` partitioned. Federated held **103% of expected**; the flat and gateway mirrors fell to **1%**. |
+| FM3 brownout | `zone-a1` of `region-a` slowed. **HAZL did not widen** — see below. |
+| FM4 region | `region-a` lost. West absorbed **99% of expected**, 0 errors, 0 non-mTLS. |
+| FM5 drift | `east` off the trust anchor. Failed closed, 0 non-mTLS. |
+
+Two things in this session are honest failures rather than tidy results, and
+they are left in on purpose.
+
+**FM3 did not move HAZL, and cannot as the rig stands.** `west` is the only
+cluster generating load and it sits alone in `region-b`, so at rest HAZL uses
+its one zone-local endpoint — in `west`. The brownout slows a zone in
+`region-a`, which that traffic never touches, so the load band was never
+crossed. `results/SHORTCOMINGS.md` § 16 predicted this when zones became
+region-scoped.
+
+**An earlier FM4 attempt aborted mid-fault**, at 11:53, and is annotated as
+`Failed FM4 Simulation`. Its guard had a bug that has since been fixed. The gap
+between it and the successful FM4 at 12:44 is recovery work, not measurement.
 
 To replay a specific archive rather than the newest one on disk:
 
@@ -170,12 +206,15 @@ for the re-measurement.
 
 ### 6. Zone-aware balancing — enterprise only
 
-**Both panels are empty on open source, by design.** The proxy emits no HAZL
-series at all. Re-record with `LINKERD_FLAVOR=bel` if you want this row.
+**Both panels are empty on open source, by design** — the proxy emits no HAZL
+series at all. The published session was recorded on `LINKERD_FLAVOR=bel`, so
+this row has data in it; a rig of your own needs `bel` to fill it.
 
 The load band is not the documented 0.8/2.0 — those are per-endpoint, and the
 exposed values are the pool aggregate — and it *moves* as the pool grows, which
-is why it is plotted rather than assumed.
+is why it is plotted rather than assumed. In the published session the band high
+sits at 2.00 against an active pool of 1, and the load never approaches it:
+that is FM3 failing to reach HAZL, not HAZL declining to react.
 
 ### 7. Invariants — these should never move
 

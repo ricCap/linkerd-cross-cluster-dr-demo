@@ -209,9 +209,9 @@ tasks:
     # write-up has a browser and curl; assuming the GitHub CLI would put a login
     # between them and the dashboard, which is the friction this whole path
     # exists to remove.
-    desc: "Download the published sample run into prometheus-archive/ (RELEASE=sample-run-fm2-hard)"
+    desc: "Download the published sample run into prometheus-archive/ (RELEASE=sample-run-2026-09-20)"
     vars:
-      RELEASE: '{{.RELEASE | default "sample-run-fm2-hard"}}'
+      RELEASE: '{{.RELEASE | default "sample-run-2026-09-20"}}'
       REPO: '{{.REPO | default "ricCap/linkerd-cross-cluster-dr-demo"}}'
     cmd: |
       set -eu
