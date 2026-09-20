@@ -226,19 +226,32 @@ bash "${REPO_ROOT}/chaos/fm4-region-loss.sh" fail "$REGION"
 
 # Prove the region is actually gone before measuring the failover.
 #
-# Counted from `docker ps` rather than kubectl: during a partition the API
-# server does not answer, and "kubectl failed" and "the nodes are gone" are very
-# different claims. A partition that silently did not apply would otherwise be
-# reported as a flawless failover.
-still_up=0
+# Asked of Docker rather than kubectl: during a partition the API server does not
+# answer, and "kubectl failed" and "the nodes are gone" are very different claims.
+# A partition that silently did not apply would otherwise be reported as a
+# flawless failover.
+#
+# CHECK THE NETWORK, NOT THE PROCESS. This counted running containers and
+# required zero, which FM4 can never satisfy: chaos/fm4-region-loss.sh cuts the
+# region with `docker network disconnect`, and a disconnected container is still
+# running. The check also matched `k3d-<cluster>-serverlb`, so it counted 8 for
+# a region holding 6 nodes. It failed every FM4 run, after injecting the fault
+# and before restoring it -- which left the region cut and the next experiment
+# measuring a partitioned rig.
+still_attached=""
 for c in $(clusters_in_region "$REGION"); do
-  n="$(docker ps --filter "name=k3d-${c}-" --format '{{.Names}}' 2>/dev/null | grep -c . || true)"
-  still_up=$(( still_up + ${n:-0} ))
+  for n in $(node_containers "$c"); do
+    attached="$(docker inspect "$n" \
+      -f "{{if index .NetworkSettings.Networks \"${DOCKER_NET}\"}}yes{{end}}" 2>/dev/null || true)"
+    [ "$attached" = "yes" ] && still_attached="${still_attached} ${n}"
+  done
 done
-[ "$still_up" -eq 0 ] || die "region '${REGION}' still has ${still_up} running node container(s)
-     after injection, so the partition did not fully apply. A failover measured
-     against a region that is still up reads as a flawless result."
-ok "region '${REGION}' is down (0 node containers running)"
+[ -z "$still_attached" ] || die "region '${REGION}' still has node container(s) attached to
+     '${DOCKER_NET}' after injection, so the partition did not fully apply:
+    ${still_attached}
+     A failover measured against a region that is still up reads as a flawless
+     result."
+ok "region '${REGION}' is cut (no node container is on ${DOCKER_NET})"
 
 # First probe immediately after the cut, while the survivor is still working out
 # that half its mesh is gone. The convergence loop below is deliberately left
