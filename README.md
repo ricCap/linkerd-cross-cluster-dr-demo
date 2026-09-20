@@ -19,7 +19,7 @@ If you want to replicate these experiments in your clusters, here's a quick chec
 
 ![Steady-state topology](diagrams/01-steady-state-topology.svg)
 
-![The three exposure modes](diagrams/02-steady-state-exposure-modes.svg)
+![The three exposure modes](diagrams/02-compact.png)
 
 ## The experiments
 
