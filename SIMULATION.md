@@ -120,7 +120,7 @@ chaos/      failure-mode manifests and scripts
 grafana/    dr-dashboard.json, alert-rules.yml
             archive-stack.sh                   replays a run's charts offline
             README.md                          how to open it, and how to read it
-diagrams/   *.excalidraw + rendered *.svg      the figures above; render-svg.py
+diagrams/   *.excalidraw + rendered *.svg      README.md's figures; render-svg.py
 viz/        export.sh + index.html             status page over a snapshot feed
             build.sh                           bundles recorded runs into docs/
 docs/       generated, committed               the published replay site

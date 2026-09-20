@@ -1,6 +1,6 @@
 # Cross-cluster disaster recovery: Linkerd chaos experiments
 
-This repository contains a local setup to run a **cross-cluster Disaster Recoverty exercise** against Linkerd.
+This repository contains a local setup to run a **cross-cluster Disaster Recovery exercise** against Linkerd.
 It uses [k3d](https://k3d.io/stable/) to create three clusters on a shared Docker network, simulating a multi-region cloud setup, with workload exposed using the three Linkerd [multi-cluster modes](https://linkerd.io/2-edge/features/multicluster/). It then tests various failure scenario: mesh control plane, cluster, zone, and region failure. 
 
 **[▶ Browse the recorded runs](https://riccap.github.io/linkerd-cross-cluster-dr-demo/)** to visualize the past experiments that are committed along with the repo.
